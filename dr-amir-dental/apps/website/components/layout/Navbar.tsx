@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Phone } from 'lucide-react';
+import { X, Menu, Phone } from 'lucide-react';
 import { useScrollSpy, SECTIONS, type SectionId } from '../../hooks/useScrollSpy';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { useClinicStatus } from '../../hooks/useClinicStatus';
 
 const NAV_LABELS: Record<SectionId, string> = {
   home: 'Home',
@@ -18,8 +19,11 @@ const NAV_LABELS: Record<SectionId, string> = {
 
 export function Navbar() {
   const activeSection = useScrollSpy();
+  const { config } = useClinicStatus();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  const phone = config?.phone || '0300-1234567';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -104,11 +108,11 @@ export function Navbar() {
           <div className="flex items-center gap-3">
             {/* Phone number (desktop only) */}
             <a
-              href="tel:+923001234567"
+              href={`tel:${phone.replace(/[^0-9+]/g, '')}`}
               className="hidden xl:flex items-center gap-2 px-4 py-2 text-sm font-medium text-[var(--color-primary)] bg-[var(--color-primary)]/10 rounded-full hover:bg-[var(--color-primary)]/20 transition-colors"
             >
               <Phone className="w-4 h-4" />
-              <span>0300-1234567</span>
+              <span>{phone}</span>
             </a>
 
             <ThemeToggle />
@@ -159,11 +163,11 @@ export function Navbar() {
 
               {/* Mobile phone link */}
               <a
-                href="tel:+923001234567"
+                href={`tel:${phone.replace(/[^0-9+]/g, '')}`}
                 className="flex items-center gap-2 px-4 py-3 text-base font-medium text-[var(--color-primary)]"
               >
                 <Phone className="w-5 h-5" />
-                <span>0300-1234567</span>
+                <span>{phone}</span>
               </a>
             </div>
           </motion.div>

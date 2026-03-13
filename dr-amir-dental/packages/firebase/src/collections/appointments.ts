@@ -81,14 +81,23 @@ export async function getBookedSlots(date: string): Promise<string[]> {
 export function subscribeToAppointments(
   callback: (appointments: Appointment[]) => void
 ): Unsubscribe {
-  const q = query(
-    collection(getDb(), COLLECTION),
-    orderBy('date', 'desc')
-  );
-  return onSnapshot(q, (snap) => {
-    const appointments = snap.docs.map(
-      (d) => ({ id: d.id, ...d.data() }) as Appointment
+  try {
+    const q = query(
+      collection(getDb(), COLLECTION),
+      orderBy('date', 'desc')
     );
-    callback(appointments);
-  });
+    return onSnapshot(q, (snap) => {
+      const appointments = snap.docs.map(
+        (d) => ({ id: d.id, ...d.data() }) as Appointment
+      );
+      callback(appointments);
+    }, (error) => {
+      console.error('[appointments] Snapshot error:', error);
+      callback([]);
+    });
+  } catch (error) {
+    console.error('[appointments] Failed to subscribe:', error);
+    callback([]);
+    return () => {};
+  }
 }

@@ -1,27 +1,110 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Calendar as CalendarIcon, Link as LinkIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit2, Trash2, Calendar as CalendarIcon, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
 import { Button, Card, Badge, Modal, Input } from '@dental/ui';
-
-const MOCK_POSTS = [
-  { id: '1', title: 'Why Regular Dental Checkups Matter', slug: 'why-regular-dental-checkups-matter', status: 'published', author: 'Dr. Amir', date: '2024-03-10' },
-  { id: '2', title: '5 Tips for Whiter Teeth at Home', slug: '5-tips-for-whiter-teeth-at-home', status: 'published', author: 'Dr. Amir', date: '2024-03-05' },
-  { id: '3', title: 'Understanding Root Canals', slug: 'understanding-root-canals', status: 'draft', author: 'Staff Writer', date: '2024-03-15' },
-];
+import { 
+  subscribeToBlogPosts, 
+  createBlogPost, 
+  updateBlogPost, 
+  deleteBlogPost 
+} from '@dental/firebase';
+import { uploadToCloudinary } from '@dental/firebase';
+import { slugify } from '@dental/utils';
+import type { BlogPost } from '@dental/types';
 
 export default function BlogPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<any>(null);
+  const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleEdit = (post: any) => {
+  // Form State
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('');
+  // Fake author since we don't have user profiles right now
+  const [author, setAuthor] = useState('Dr. Amir'); 
+  const [content, setContent] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+
+  useEffect(() => {
+    const unsub = subscribeToBlogPosts((data) => setPosts(data));
+    return unsub;
+  }, []);
+
+  const handleEdit = (post: BlogPost) => {
     setEditingPost(post);
+    setTitle(post.title);
+    setCategory(post.category);
+    setContent(post.content);
+    setImageFile(null);
+    setPreviewUrl(post.featuredImageUrl || '');
     setIsModalOpen(true);
   };
 
   const handleNew = () => {
     setEditingPost(null);
+    setTitle('');
+    setCategory('');
+    setContent('');
+    setImageFile(null);
+    setPreviewUrl('');
     setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string, title: string) => {
+    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
+      await deleteBlogPost(id);
+    }
+  };
+
+  const handleSave = async (status: 'published' | 'draft') => {
+    setIsSaving(true);
+    try {
+      let imageUrl = previewUrl;
+      if (imageFile) {
+        imageUrl = await uploadToCloudinary(imageFile, 'dr-amir-blog');
+      }
+
+      const postData: Partial<BlogPost> = {
+        title,
+        slug: slugify(title),
+        category,
+        content,
+        status,
+        featuredImageUrl: imageUrl,
+        excerpt: content.substring(0, 150) + '...',
+        seoTitle: title,
+        seoDescription: content.substring(0, 150),
+        tags: [category].filter(Boolean)
+      };
+
+      if (editingPost) {
+        await updateBlogPost(editingPost.id, postData);
+      } else {
+        await createBlogPost({
+          ...postData,
+          createdAt: new Date().toISOString(),
+          publishedAt: status === 'published' ? new Date().toISOString() : '',
+          scheduledAt: '',
+        } as Omit<BlogPost, 'id'>);
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Failed to save post', error);
+      alert('Failed to save post');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
   };
 
   return (
@@ -49,7 +132,7 @@ export default function BlogPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
-              {MOCK_POSTS.map((post) => (
+              {posts.map((post) => (
                 <tr key={post.id} className="hover:bg-[var(--color-surface)]/50 transition-colors group">
                   <td className="p-4">
                     <p className="font-bold text-[var(--color-text-primary)]">{post.title}</p>
@@ -57,8 +140,10 @@ export default function BlogPage() {
                       <LinkIcon className="w-3 h-3" /> /blog/{post.slug}
                     </div>
                   </td>
-                  <td className="p-4 text-sm text-[var(--color-text-secondary)]">{post.author}</td>
-                  <td className="p-4 text-sm text-[var(--color-text-secondary)]">{post.date}</td>
+                  <td className="p-4 text-sm text-[var(--color-text-secondary)]">Dr. Amir</td>
+                  <td className="p-4 text-sm text-[var(--color-text-secondary)]">
+                    {new Date(post.createdAt).toLocaleDateString()}
+                  </td>
                   <td className="p-4">
                     <Badge variant={post.status === 'published' ? 'success' : 'pending'}>
                       {post.status.toUpperCase()}
@@ -69,7 +154,7 @@ export default function BlogPage() {
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(post)}>
                         <Edit2 className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-500/10">
+                      <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-500/10" onClick={() => handleDelete(post.id, post.title)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -91,14 +176,15 @@ export default function BlogPage() {
         <div className="space-y-4">
           <Input 
             label="Post Title" 
-            defaultValue={editingPost?.title} 
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. 5 Tips for Whiter Teeth" 
             className="text-lg font-bold"
           />
           
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Category" placeholder="e.g. Dental Hygiene" />
-            <Input label="Author" defaultValue={editingPost?.author || "Dr. Amir"} />
+            <Input label="Category" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Dental Hygiene" />
+            <Input label="Author" value={author} onChange={(e) => setAuthor(e.target.value)} disabled />
           </div>
 
           <div>
@@ -121,26 +207,36 @@ export default function BlogPage() {
               <textarea 
                 className="w-full p-4 bg-[var(--color-bg)] focus:outline-none resize-y min-h-[200px] text-[var(--color-text-primary)] border-none"
                 placeholder="Start writing..."
-                defaultValue="This is a placeholder for the TipTap rich text editor. In Phase 5 integration, this will be replaced with a real TipTap instance supporting bold, italic, headings, lists, and image uploads."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
               />
             </div>
           </div>
 
           <div>
              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">Featured Image (Cloudinary)</label>
-             <div className="border-2 border-dashed border-[var(--color-border)] rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[var(--color-primary)] transition-colors bg-[var(--color-surface)]">
-               <span className="text-sm font-medium">Upload Image</span>
-             </div>
+             <label className="border-2 border-dashed border-[var(--color-border)] rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[var(--color-primary)] transition-colors relative overflow-hidden h-32">
+               <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+               {previewUrl ? (
+                 /* eslint-disable-next-line @next/next/no-img-element */
+                 <img src={previewUrl} alt="Preview" className="w-full h-full object-cover absolute" />
+               ) : (
+                 <>
+                   <ImageIcon className="w-8 h-8 text-[var(--color-text-secondary)] mb-2" />
+                   <p className="text-sm font-medium text-[var(--color-text-primary)]">Click to upload image</p>
+                 </>
+               )}
+             </label>
           </div>
 
           <div className="flex justify-between items-center pt-4 border-t border-[var(--color-border)]">
-            <Button variant="outline" className="text-red-500 hover:text-red-600 hover:bg-red-50/10 border-red-500/30">
+            <Button variant="outline" className="text-red-500 hover:text-red-600 hover:bg-red-50/10 border-red-500/30" onClick={() => setIsModalOpen(false)}>
               <Trash2 className="w-4 h-4 mr-2" /> Discard
             </Button>
             
             <div className="flex gap-3">
-              <Button variant="outline">Save as Draft</Button>
-              <Button className="bg-[var(--color-primary)]">Publish Post</Button>
+              <Button variant="outline" isLoading={isSaving} onClick={() => handleSave('draft')}>Save as Draft</Button>
+              <Button className="bg-[var(--color-primary)]" isLoading={isSaving} onClick={() => handleSave('published')}>Publish Post</Button>
             </div>
           </div>
         </div>

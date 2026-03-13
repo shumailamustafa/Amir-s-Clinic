@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Phone, Mail, MapPin, Clock, Instagram, Facebook } from 'lucide-react';
+import { useClinicStatus } from '../../hooks/useClinicStatus';
 
 const socialLinks = [
   { icon: Instagram, label: 'Instagram', href: '#' },
@@ -20,7 +21,12 @@ const quickLinks = [
 ];
 
 export function Footer() {
+  const { config } = useClinicStatus();
   const currentYear = new Date().getFullYear();
+
+  const phone = config?.phone || '0300-1234567';
+  const email = config?.email || 'info@dramirdental.com';
+  const address = config?.address || 'Main Boulevard, Gulberg III, Lahore, Pakistan';
 
   return (
     <footer className="bg-[var(--color-footer-bg)] text-white pt-16 pb-8">
@@ -42,22 +48,22 @@ export function Footer() {
             </p>
             <div className="space-y-3">
               <a
-                href="tel:+923001234567"
+                href={`tel:${phone.replace(/[^0-9+]/g, '')}`}
                 className="flex items-center gap-3 text-gray-400 hover:text-[var(--color-primary)] transition-colors text-sm"
               >
                 <Phone className="w-4 h-4 shrink-0" />
-                <span>0300-1234567</span>
+                <span>{phone}</span>
               </a>
               <a
-                href="mailto:info@dramirdental.com"
+                href={`mailto:${email}`}
                 className="flex items-center gap-3 text-gray-400 hover:text-[var(--color-primary)] transition-colors text-sm"
               >
                 <Mail className="w-4 h-4 shrink-0" />
-                <span>info@dramirdental.com</span>
+                <span>{email}</span>
               </a>
               <div className="flex items-start gap-3 text-gray-400 text-sm">
                 <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>Main Boulevard, Gulberg III, Lahore, Pakistan</span>
+                <span>{address}</span>
               </div>
             </div>
           </motion.div>

@@ -16,39 +16,24 @@ import { childVariants } from '../ui/SectionWrapper';
 
 type SubTab = 'doctor' | 'clinic';
 
-// Placeholder data — will come from Firestore later
-const doctorData = {
+import { useDoctorProfile } from '../../hooks/useDoctorProfile';
+import { useClinicStatus } from '../../hooks/useClinicStatus';
+
+// Default mock data to use as fallback or loading state
+const defaultDoctorData = {
   name: 'Dr. Amir',
   title: 'BDS, FCPS — Dental Surgeon',
   bio: 'With over 15 years of experience in modern dentistry, Dr. Amir is dedicated to providing the highest quality dental care using state-of-the-art technology and techniques.',
   profileImageUrl: '',
-  education: [
-    { institution: 'King Edward Medical University', degree: 'BDS', year: '2005' },
-    { institution: 'College of Physicians & Surgeons Pakistan', degree: 'FCPS Operative Dentistry', year: '2010' },
-    { institution: 'Royal College of Surgeons', degree: 'Advanced Implantology', year: '2015' },
-  ],
-  experience: [
-    { place: 'Mayo Hospital Lahore', role: 'Dental Surgeon', duration: '2005-2010' },
-    { place: 'Private Practice', role: 'Clinic Director', duration: '2010-Present' },
-  ],
-  skills: [
-    { name: 'Dental Implants', percentage: 95 },
-    { name: 'Root Canal Treatment', percentage: 98 },
-    { name: 'Cosmetic Dentistry', percentage: 90 },
-    { name: 'Orthodontics', percentage: 85 },
-    { name: 'Oral Surgery', percentage: 92 },
-  ],
-  achievements: [
-    { title: '10,000+ Patients', icon: '👥' },
-    { title: '15+ Years', icon: '📅' },
-    { title: 'Best Dentist 2023', icon: '🏆' },
-    { title: '4.8 Rating', icon: '⭐' },
-  ],
-  languages: ['English', 'Urdu', 'Punjabi'],
+  education: [],
+  experience: [],
+  skills: [],
+  achievements: [],
+  languages: ['English', 'Urdu'],
 };
 
-const clinicData = {
-  gallery: ['/clinic-1.jpg', '/clinic-2.jpg', '/clinic-3.jpg', '/clinic-4.jpg'],
+const defaultClinicData = {
+  gallery: [],
   address: 'Main Boulevard, Gulberg III, Lahore, Pakistan',
   mapCoordinates: { lat: 31.5204, lng: 74.3587 },
   workingHours: {
@@ -64,6 +49,8 @@ const clinicData = {
 
 export function AboutSection() {
   const [activeTab, setActiveTab] = useState<SubTab>('doctor');
+  const { profile, loading: doctorLoading } = useDoctorProfile();
+  const { config, loading: clinicLoading } = useClinicStatus();
 
   return (
     <section id="about" className="relative py-20 overflow-hidden">
@@ -128,7 +115,7 @@ export function AboutSection() {
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
-              <DoctorTab />
+              <DoctorTab data={profile || defaultDoctorData} loading={doctorLoading} />
             </motion.div>
           ) : (
             <motion.div
@@ -138,7 +125,7 @@ export function AboutSection() {
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
-              <ClinicTab />
+              <ClinicTab data={config || defaultClinicData} loading={clinicLoading} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -147,7 +134,8 @@ export function AboutSection() {
   );
 }
 
-function DoctorTab() {
+function DoctorTab({ data, loading }: { data: any, loading: boolean }) {
+  const doctorData = data;
   return (
     <div className="space-y-16">
       {/* Doctor Profile Header */}
@@ -199,7 +187,7 @@ function DoctorTab() {
           Education
         </h4>
         <div className="relative pl-8 border-l-2 border-[var(--color-primary)]/30 space-y-8">
-          {doctorData.education.map((edu, index) => (
+          {(doctorData.education || []).map((edu: any, index: number) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, x: -20 }}
@@ -231,7 +219,7 @@ function DoctorTab() {
           Expertise
         </h4>
         <div className="space-y-5 max-w-xl">
-          {doctorData.skills.map((skill, index) => (
+          {(doctorData.skills || []).map((skill: any, index: number) => (
             <motion.div
               key={skill.name}
               initial={{ opacity: 0 }}
@@ -275,7 +263,7 @@ function DoctorTab() {
             Experience
           </h4>
           <div className="space-y-4">
-            {doctorData.experience.map((exp, index) => (
+            {(doctorData.experience || []).map((exp: any, index: number) => (
               <div
                 key={index}
                 className="bg-[var(--color-surface)] rounded-xl p-4 border border-[var(--color-border)]"
@@ -300,7 +288,7 @@ function DoctorTab() {
             Achievements
           </h4>
           <div className="grid grid-cols-2 gap-4">
-            {doctorData.achievements.map((ach, index) => (
+            {(doctorData.achievements || []).map((ach: any, index: number) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -329,7 +317,7 @@ function DoctorTab() {
           Languages
         </h4>
         <div className="flex gap-3">
-          {doctorData.languages.map((lang) => (
+          {(doctorData.languages || []).map((lang: string) => (
             <span
               key={lang}
               className="px-4 py-2 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full text-sm font-medium"
@@ -343,7 +331,8 @@ function DoctorTab() {
   );
 }
 
-function ClinicTab() {
+function ClinicTab({ data, loading }: { data: any, loading: boolean }) {
+  const clinicData = data;
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 
   return (
@@ -360,7 +349,7 @@ function ClinicTab() {
           Our Clinic
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {clinicData.gallery.map((_, index) => (
+          {(clinicData?.gallery || []).map((_: any, index: number) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, scale: 0.9 }}
@@ -414,8 +403,8 @@ function ClinicTab() {
           <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] overflow-hidden">
             <table className="w-full">
               <tbody>
-                {days.map((day, index) => {
-                  const hours = clinicData.workingHours[day];
+                {days.map((day, index: number) => {
+                  const hours = clinicData?.workingHours?.[day] || { isOpen: false, open: '', close: '' };
                   return (
                     <motion.tr
                       key={day}

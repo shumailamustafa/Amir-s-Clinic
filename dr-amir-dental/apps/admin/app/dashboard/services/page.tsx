@@ -1,29 +1,147 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, GripVertical, Image as ImageIcon } from 'lucide-react';
 import { Button, Card, Badge, Modal, Input } from '@dental/ui';
-
-// Placeholder data
-const MOCK_SERVICES = [
-  { id: '1', name: 'Dental Implants', priceMin: 50000, priceMax: 150000, isVisible: true, order: 1 },
-  { id: '2', name: 'Root Canal Treatment', priceMin: 15000, priceMax: 40000, isVisible: true, order: 2 },
-  { id: '3', name: 'Teeth Whitening', priceMin: 10000, priceMax: 25000, isVisible: true, order: 3 },
-  { id: '4', name: 'Aesthetic Crowns', priceMin: 20000, priceMax: 50000, isVisible: false, order: 4 },
-];
+import { 
+  subscribeToServices, 
+  createService, 
+  updateService, 
+  deleteService, 
+  reorderServices 
+} from '@dental/firebase';
+import { uploadToCloudinary } from '@dental/firebase';
+import type { Service } from '@dental/types';
 
 export default function ServicesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingService, setEditingService] = useState<any>(null);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleEdit = (service: any) => {
+  // Form State
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [priceMin, setPriceMin] = useState(0);
+  const [priceMax, setPriceMax] = useState(0);
+  const [duration, setDuration] = useState('');
+  const [isVisible, setIsVisible] = useState(true);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+
+  // Drag and Drop State
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeToServices((data) => setServices(data));
+    return unsub;
+  }, []);
+
+  const handleEdit = (service: Service) => {
     setEditingService(service);
+    setName(service.name);
+    setDescription(service.description);
+    setPriceMin(service.priceMin);
+    setPriceMax(service.priceMax);
+    setDuration(service.estimatedTime);
+    setIsVisible(service.isVisible);
+    setImageFile(null);
+    setPreviewUrl(service.imageUrl || '');
     setIsModalOpen(true);
   };
 
   const handleNew = () => {
     setEditingService(null);
+    setName('');
+    setDescription('');
+    setPriceMin(0);
+    setPriceMax(0);
+    setDuration('');
+    setIsVisible(true);
+    setImageFile(null);
+    setPreviewUrl('');
     setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
+      await deleteService(id);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      let imageUrl = previewUrl; // Use existing if no file uploaded
+      
+      if (imageFile) {
+        imageUrl = await uploadToCloudinary(imageFile, 'dr-amir-services');
+      }
+
+      if (editingService) {
+        await updateService(editingService.id, {
+          name, description, priceMin, priceMax, estimatedTime: duration, isVisible, imageUrl
+        });
+      } else {
+        await createService({
+          name, description, priceMin, priceMax, estimatedTime: duration, isVisible,
+          procedureSteps: [],
+          imageUrl,
+          beforeAfterImages: [],
+          order: services.length,
+          createdAt: new Date().toISOString()
+        } as Omit<Service, 'id'>);
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Failed to save service', error);
+      alert('Failed to save service');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = 'move';
+    e.currentTarget.classList.add('opacity-50');
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setDraggedId(null);
+    e.currentTarget.classList.remove('opacity-50');
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    if (draggedId === id) return;
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!draggedId || draggedId === targetId) return;
+
+    const list = [...services];
+    const draggedIdx = list.findIndex(s => s.id === draggedId);
+    const targetIdx = list.findIndex(s => s.id === targetId);
+
+    const [draggedItem] = list.splice(draggedIdx, 1);
+    list.splice(targetIdx, 0, draggedItem);
+    
+    // Immediately fix local state so it looks fast
+    setServices(list);
+
+    // Persist to firestore
+    const orderedIds = list.map(s => s.id);
+    await reorderServices(orderedIds);
   };
 
   return (
@@ -55,9 +173,17 @@ export default function ServicesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
-            {MOCK_SERVICES.map((service) => (
-              <tr key={service.id} className="hover:bg-[var(--color-surface)]/50 transition-colors group">
-                <td className="p-4 text-center cursor-grab active:cursor-grabbing text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]">
+            {services.map((service) => (
+              <tr 
+                key={service.id} 
+                className="hover:bg-[var(--color-surface)]/50 transition-colors group cursor-grab active:cursor-grabbing"
+                draggable
+                onDragStart={(e) => handleDragStart(e, service.id)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => handleDragOver(e, service.id)}
+                onDrop={(e) => handleDrop(e, service.id)}
+              >
+                <td className="p-4 text-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]">
                   <GripVertical className="w-5 h-5 mx-auto" />
                 </td>
                 <td className="p-4 font-medium text-[var(--color-text-primary)]">{service.name}</td>
@@ -74,7 +200,7 @@ export default function ServicesPage() {
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(service)}>
                       <Edit2 className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-500/10">
+                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-500/10" onClick={() => handleDelete(service.id, service.name)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -95,38 +221,50 @@ export default function ServicesPage() {
         <div className="space-y-4">
           <Input 
             label="Service Name" 
-            defaultValue={editingService?.name} 
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Dental Implants" 
           />
           
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">Description</label>
             <textarea 
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-y min-h-[100px]"
               placeholder="Short description for the card..."
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Minimum Price (Rs)" type="number" defaultValue={editingService?.priceMin} />
-            <Input label="Maximum Price (Rs)" type="number" defaultValue={editingService?.priceMax} />
+            <Input label="Minimum Price (Rs)" type="number" value={priceMin} onChange={(e) => setPriceMin(Number(e.target.value))} />
+            <Input label="Maximum Price (Rs)" type="number" value={priceMax} onChange={(e) => setPriceMax(Number(e.target.value))} />
           </div>
 
-          <Input label="Estimated Duration" placeholder="e.g. 30-45 minutes" />
+          <Input label="Estimated Duration" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 30-45 minutes" />
           
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">Icon / Image (Cloudinary)</label>
-            <div className="border-2 border-dashed border-[var(--color-border)] rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[var(--color-primary)] transition-colors">
-              <ImageIcon className="w-8 h-8 text-[var(--color-text-secondary)] mb-2" />
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">Click to upload image</p>
-              <p className="text-xs text-[var(--color-text-secondary)]">JPG, PNG up to 2MB</p>
-            </div>
+            <label className="border-2 border-dashed border-[var(--color-border)] rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[var(--color-primary)] transition-colors relative overflow-hidden h-32">
+              <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+              {previewUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={previewUrl} alt="Preview" className="w-full h-full object-contain absolute" />
+              ) : (
+                <>
+                  <ImageIcon className="w-8 h-8 text-[var(--color-text-secondary)] mb-2" />
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">Click to upload image</p>
+                  <p className="text-xs text-[var(--color-text-secondary)]">JPG, PNG up to 2MB</p>
+                </>
+              )}
+            </label>
           </div>
 
           <label className="flex items-center gap-3 cursor-pointer py-2">
             <input 
               type="checkbox" 
-              defaultChecked={editingService ? editingService.isVisible : true}
+              checked={isVisible}
+              onChange={(e) => setIsVisible(e.target.checked)}
               className="w-5 h-5 accent-[var(--color-primary)] rounded border-[var(--color-border)]"
             />
             <span className="font-medium text-[var(--color-text-primary)]">Visible on Website</span>
@@ -134,7 +272,7 @@ export default function ServicesPage() {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button onClick={() => setIsModalOpen(false)}>Save Service</Button>
+            <Button onClick={handleSave} isLoading={isSaving}>Save Service</Button>
           </div>
         </div>
       </Modal>

@@ -103,8 +103,25 @@ interface SelectedService {
   priceMax: number;
 }
 
+import { useServices } from '../../hooks/useServices';
+
 export function ServicesSection() {
   const [selectedService, setSelectedService] = useState<SelectedService | null>(null);
+  const { services, loading } = useServices(true);
+
+  // Map real Firestore data to the format needed by the UI, or fallback to placeholder data if no real data exists
+  const displayServices: SelectedService[] = services.length > 0 
+    ? services.map(s => ({
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        icon: Stethoscope, // Fallback icon since Firestore uses imageUrl
+        procedureSteps: s.procedureSteps || [],
+        estimatedTime: s.estimatedTime || '',
+        priceMin: s.priceMin || 0,
+        priceMax: s.priceMax || 0,
+      }))
+    : servicesData;
 
   return (
     <section id="services" className="relative py-20 bg-[var(--color-surface)] overflow-hidden">
@@ -128,7 +145,7 @@ export function ServicesSection() {
 
         {/* Services Grid — 3 columns, staggered */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
-          {servicesData.map((service, index) => (
+          {displayServices.map((service, index) => (
             <motion.div
               key={service.id}
               initial={{ opacity: 0, y: 30 }}

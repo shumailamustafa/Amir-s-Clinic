@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   CalendarDays,
-  ListHeart,
+  Heart,
   Store,
   MessageSquare,
   FileText,
@@ -18,7 +18,7 @@ const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/clinic-status', label: 'Clinic Status', icon: Store },
   { href: '/dashboard/appointments', label: 'Appointments', icon: CalendarDays },
-  { href: '/dashboard/services', label: 'Services', icon: ListHeart },
+  { href: '/dashboard/services', label: 'Services', icon: Heart },
   { href: '/dashboard/about', label: 'About (Doctor & Clinic)', icon: FileText },
   { href: '/dashboard/reviews', label: 'Reviews', icon: MessageSquare },
   { href: '/dashboard/blog', label: 'Blog', icon: FileText },

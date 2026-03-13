@@ -6,6 +6,7 @@ import { Star, MessageSquarePlus, Send, ChevronLeft, ChevronRight, User } from '
 import { Button, Input } from '@dental/ui';
 import { FloatingTeeth } from '../ui/FloatingTeeth';
 import { StarRating } from '../ui/StarRating';
+import { useReviews } from '../../hooks/useReviews';
 
 // Placeholder reviews — will come from Firestore
 const reviewsData = [
@@ -58,9 +59,22 @@ export function ReviewsSection() {
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [scrollIndex, setScrollIndex] = useState(0);
+  
+  const { reviews } = useReviews(true);
 
-  const visibleCount = 3;
-  const maxIndex = Math.max(0, reviewsData.length - visibleCount);
+  const displayReviews = reviews.length > 0 
+    ? reviews.map(r => ({
+        id: r.id,
+        name: r.patientName,
+        rating: r.rating,
+        text: r.reviewText,
+        date: r.createdAt,
+        avatarLetter: r.patientName.charAt(0).toUpperCase()
+      }))
+    : reviewsData;
+
+const visibleCount = 3;
+  const maxIndex = Math.max(0, displayReviews.length - visibleCount);
 
   const handleSubmitReview = () => {
     // Will integrate with Firebase later
@@ -134,7 +148,7 @@ export function ReviewsSection() {
                 animate={{ x: `-${scrollIndex * (100 / visibleCount + 2)}%` }}
                 transition={{ type: 'spring', stiffness: 200, damping: 30 }}
               >
-                {reviewsData.map((review, index) => (
+                {displayReviews.map((review, index) => (
                   <motion.div
                     key={review.id}
                     initial={{ opacity: 0, y: 20 }}

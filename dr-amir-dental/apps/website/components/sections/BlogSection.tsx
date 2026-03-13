@@ -71,11 +71,28 @@ const blogData = [
 
 const categories = ['All', 'Dental Care', 'Oral Health', 'Cosmetic', 'Orthodontics', 'Pediatric'];
 
+import { useBlog } from '../../hooks/useBlog';
+
 export function BlogSection() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const { posts } = useBlog(true); // only published posts
+  
+  const displayPosts = posts.length > 0
+    ? posts.map(p => ({
+        id: p.id,
+        title: p.title,
+        excerpt: p.excerpt,
+        category: p.category,
+        readingTime: '5 min read', // Placeholder reading time
+        date: p.publishedAt || p.createdAt,
+        imageUrl: p.featuredImageUrl,
+        slug: p.slug
+      }))
+    : blogData;
 
-  const filteredPosts = blogData.filter((post) => {
+  const filteredPosts = displayPosts.filter((post) => {
     const matchesCategory = activeCategory === 'All' || post.category === activeCategory;
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());

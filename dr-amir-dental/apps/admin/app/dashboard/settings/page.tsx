@@ -1,23 +1,55 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, Copy, CheckCircle2 } from 'lucide-react';
 import { Button, Card, Input } from '@dental/ui';
+import { subscribeToClinicConfig, updateClinicConfig } from '@dental/firebase';
+import type { ClinicConfig } from '@dental/types';
 
 export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [config, setConfig] = useState<ClinicConfig | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeToClinicConfig((data) => setConfig(data));
+    return unsub;
+  }, []);
 
   const handleSave = async () => {
+    if (!config) return;
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setSaving(false);
+    try {
+      await updateClinicConfig(config);
+      alert('Settings saved successfully!');
+    } catch (error) {
+      console.error('Failed to save settings', error);
+      alert('Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const copyRef = () => {
     navigator.clipboard.writeText('https://dramirdental.com');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (!config) return <div className="p-8 text-[var(--color-text-secondary)]">Loading settings...</div>;
+
+  const updateField = (field: keyof ClinicConfig, value: any) => {
+    setConfig({ ...config, [field]: value });
+  };
+
+  const updateNestedField = (parent: keyof ClinicConfig, field: string, value: any) => {
+    setConfig({
+      ...config,
+      [parent]: {
+        ...(config[parent] as any),
+        [field]: value
+      }
+    });
   };
 
   return (
@@ -35,26 +67,28 @@ export default function SettingsPage() {
       <Card className="p-6 space-y-6">
         <h2 className="text-lg font-bold text-[var(--color-text-primary)] border-b border-[var(--color-border)] pb-2">Public Contact Info</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="Primary Phone (WhatsApp)" defaultValue="0300-1234567" />
-          <Input label="Public Email" type="email" defaultValue="contact@dramirdental.com" />
+          <Input label="Primary Phone (WhatsApp)" value={config.whatsapp} onChange={(e) => updateField('whatsapp', e.target.value)} />
+          <Input label="Public Email" type="email" value={config.email} onChange={(e) => updateField('email', e.target.value)} />
+          <Input label="Clinic Phone" value={config.phone} onChange={(e) => updateField('phone', e.target.value)} />
+          <Input label="Tagline" value={config.tagline} onChange={(e) => updateField('tagline', e.target.value)} />
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">Full Address</label>
             <textarea 
               className="w-full px-4 py-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-y"
-              defaultValue="123 Health Avenue, Phase 5, DHA, Lahore, Pakistan"
+              value={config.address}
+              onChange={(e) => updateField('address', e.target.value)}
               rows={2}
             />
-          </div>
-          <div className="md:col-span-2">
-            <Input label="Google Maps Embed URL" defaultValue="https://maps.google.com/..." />
           </div>
         </div>
         
         <h3 className="text-sm font-bold text-[var(--color-text-primary)] pt-4">Social Media Links</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Input label="Facebook URL" defaultValue="https://facebook.com" />
-          <Input label="Instagram URL" defaultValue="https://instagram.com" />
-          <Input label="Twitter URL" defaultValue="" placeholder="Optional" />
+          <Input label="Facebook URL" value={config.socialLinks.facebook} onChange={(e) => updateNestedField('socialLinks', 'facebook', e.target.value)} />
+          <Input label="Instagram URL" value={config.socialLinks.instagram} onChange={(e) => updateNestedField('socialLinks', 'instagram', e.target.value)} />
+          <Input label="TikTok URL" value={config.socialLinks.tiktok} onChange={(e) => updateNestedField('socialLinks', 'tiktok', e.target.value)} />
+          <Input label="LinkedIn URL" value={config.socialLinks.linkedin} onChange={(e) => updateNestedField('socialLinks', 'linkedin', e.target.value)} />
+          <Input label="YouTube URL" value={config.socialLinks.youtube} onChange={(e) => updateNestedField('socialLinks', 'youtube', e.target.value)} />
         </div>
       </Card>
 
@@ -62,10 +96,9 @@ export default function SettingsPage() {
         <h2 className="text-lg font-bold text-[var(--color-text-primary)] border-b border-[var(--color-border)] pb-2">Payment Details</h2>
         <p className="text-sm text-[var(--color-text-secondary)]">These details are shown to patients when they choose 'Online Payment' during booking.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="JazzCash / Easypaisa Title" defaultValue="Dr. Amir" />
-          <Input label="Account / Mobile Number" defaultValue="0300-1234567" />
-          <Input label="Bank Name (Optional)" placeholder="e.g. Meezan Bank" />
-          <Input label="IBAN (Optional)" placeholder="PK..." />
+          <div className="md:col-span-2 border border-dashed border-[var(--color-border)] rounded-xl p-6 text-center text-sm text-[var(--color-text-secondary)]">
+            Payment details are currently hardcoded in the frontend. Implement mapping if needed.
+          </div>
         </div>
       </Card>
 

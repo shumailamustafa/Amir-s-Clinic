@@ -51,14 +51,23 @@ export async function updateMessageStatus(
 export function subscribeToMessages(
   callback: (messages: Message[]) => void
 ): Unsubscribe {
-  const q = query(
-    collection(getDb(), COLLECTION),
-    orderBy('createdAt', 'desc')
-  );
-  return onSnapshot(q, (snap) => {
-    const messages = snap.docs.map(
-      (d) => ({ id: d.id, ...d.data() }) as Message
+  try {
+    const q = query(
+      collection(getDb(), COLLECTION),
+      orderBy('createdAt', 'desc')
     );
-    callback(messages);
-  });
+    return onSnapshot(q, (snap) => {
+      const messages = snap.docs.map(
+        (d) => ({ id: d.id, ...d.data() }) as Message
+      );
+      callback(messages);
+    }, (error) => {
+      console.error('[messages] Snapshot error:', error);
+      callback([]);
+    });
+  } catch (error) {
+    console.error('[messages] Failed to subscribe:', error);
+    callback([]);
+    return () => {};
+  }
 }

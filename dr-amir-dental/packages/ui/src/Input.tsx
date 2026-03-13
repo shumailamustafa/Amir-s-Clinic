@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+  label?: string;
   error?: string;
   icon?: React.ReactNode;
 }
@@ -14,16 +14,18 @@ export function Input({
   id,
   ...props
 }: InputProps) {
-  const inputId = id || label.toLowerCase().replace(/\s/g, '-');
+  const inputId = id || label?.toLowerCase().replace(/\s/g, '-');
 
   return (
     <div className="w-full">
-      <label
-        htmlFor={inputId}
-        className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5"
-      >
-        {label}
-      </label>
+      {label && (
+        <label
+          htmlFor={inputId}
+          className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5"
+        >
+          {label}
+        </label>
+      )}
       <div className="relative">
         {icon && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]">

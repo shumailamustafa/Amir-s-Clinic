@@ -7,9 +7,16 @@ import { Button } from '@dental/ui';
 import { OpenClosedBadge } from '../ui/OpenClosedBadge';
 import { FloatingTeeth } from '../ui/FloatingTeeth';
 
+import { useClinicStatus } from '../../hooks/useClinicStatus';
+import { isClinicOpen } from '@dental/utils';
+
 export function HomeSection() {
-  // Placeholder status — will be replaced by real-time Firestore in later phase
-  const clinicStatus = { isOpen: true, statusText: 'Open Now — Closes at 8:00 PM' };
+  const { config, loading } = useClinicStatus();
+
+  // Determine status from real-time config
+  const clinicStatus = config 
+    ? isClinicOpen(config.openHours, config.holidayDates, config.holidayMode)
+    : { isOpen: true, statusText: 'Loading clinic status...' };
 
   const scrollToAppointments = () => {
     const el = document.getElementById('appointments');

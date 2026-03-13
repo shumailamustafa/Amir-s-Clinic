@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, AlertTriangle } from 'lucide-react';
 import { Button, Card, Input, Badge } from '@dental/ui';
+import { subscribeToClinicConfig, updateClinicConfig } from '@dental/firebase';
+import type { ClinicConfig, OpenHours } from '@dental/types';
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 
@@ -10,9 +12,10 @@ export default function ClinicStatusPage() {
   const [isEmergencyClosed, setIsEmergencyClosed] = useState(false);
   const [emergencyMessage, setEmergencyMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [config, setConfig] = useState<ClinicConfig | null>(null);
 
-  // Simulated state for hours
-  const [hours, setHours] = useState(
+  // Default state for hours to prevent crash
+  const [hours, setHours] = useState<Record<string, { isOpen: boolean; open: string; close: string }>>(
     DAYS.reduce((acc, day) => {
       acc[day] = {
         isOpen: day !== 'sunday',
@@ -23,11 +26,53 @@ export default function ClinicStatusPage() {
     }, {} as Record<string, { isOpen: boolean; open: string; close: string }>)
   );
 
+  useEffect(() => {
+    const unsubscribe = subscribeToClinicConfig((data) => {
+      if (data) {
+        setConfig(data);
+        setIsEmergencyClosed(data.holidayMode || false);
+        // We might want to save emergency message in config later, ignoring for now
+        
+        // Load actual hours
+        if (data.openHours) {
+           const newHours = { ...hours };
+           DAYS.forEach(day => {
+               if (data.openHours[day as keyof OpenHours]) {
+                   newHours[day] = data.openHours[day as keyof OpenHours];
+               }
+           });
+           setHours(newHours);
+        }
+      }
+    });
+    return unsubscribe;
+  }, []);
+
   const handleSave = async () => {
     setSaving(true);
-    // Simulate Firestore save
-    await new Promise(r => setTimeout(r, 1000));
-    setSaving(false);
+    try {
+      const updatedHours: OpenHours = {
+        monday: hours['monday'],
+        tuesday: hours['tuesday'],
+        wednesday: hours['wednesday'],
+        thursday: hours['thursday'],
+        friday: hours['friday'],
+        saturday: hours['saturday'],
+        sunday: hours['sunday'],
+      };
+
+      await updateClinicConfig({
+        holidayMode: isEmergencyClosed,
+        openHours: updatedHours,
+      });
+
+      alert('Clinic status and hours saved successfully.');
+    } catch (error) {
+      console.error('Error saving clinic status:', error);
+      alert('Failed to save. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

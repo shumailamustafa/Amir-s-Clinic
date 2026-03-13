@@ -1,27 +1,56 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, CheckCircle2, XCircle, Eye, Search, Filter } from 'lucide-react';
 import { Button, Card, Badge, Modal } from '@dental/ui';
-
-// Placeholder data
-const MOCK_APPOINTMENTS = [
-  { id: '1', ref: 'REF-A1B2C', patient: 'Ahmed Khan', phone: '0300-1111111', date: '2024-03-15', time: '10:00 AM', service: 'Dental Implants', status: 'pending_payment', createdAt: '2024-03-10' },
-  { id: '2', ref: 'REF-X9Y8Z', patient: 'Fatima Ali', phone: '0300-2222222', date: '2024-03-15', time: '11:30 AM', service: 'Teeth Whitening', status: 'confirmed', createdAt: '2024-03-09' },
-  { id: '3', ref: 'REF-M4N5P', patient: 'Usman Raza', phone: '0300-3333333', date: '2024-03-16', time: '02:00 PM', service: 'Root Canal', status: 'cancelled', createdAt: '2024-03-08' },
-  { id: '4', ref: 'REF-J7K8L', patient: 'Ayesha Syed', phone: '0300-4444444', date: '2024-03-16', time: '04:30 PM', service: 'General Checkup', status: 'pending_payment', createdAt: '2024-03-11' },
-];
+import { subscribeToAppointments, updateAppointmentStatus } from '@dental/firebase';
+import type { Appointment } from '@dental/types';
 
 export default function AppointmentsPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'confirmed'>('pending');
-  const [selectedAppt, setSelectedAppt] = useState<any>(null);
+  const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const filtered = MOCK_APPOINTMENTS.filter(a => {
+  useEffect(() => {
+    const unsubscribe = subscribeToAppointments((data) => {
+      setAppointments(data);
+      if (selectedAppt) {
+        // Update selected appt if it changes in the background
+        const updatedSelected = data.find(a => a.id === selectedAppt.id);
+        if (updatedSelected) setSelectedAppt(updatedSelected);
+      }
+    });
+    return unsubscribe;
+  }, [selectedAppt]);
+
+  const filtered = appointments.filter(a => {
+    const matchesSearch = 
+      a.referenceNumber.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      a.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a.phone.includes(searchQuery);
+
+    if (!matchesSearch) return false;
+
     if (activeTab === 'all') return true;
-    if (activeTab === 'pending') return a.status === 'pending_payment';
+    if (activeTab === 'pending') return a.status === 'pending';
     if (activeTab === 'confirmed') return a.status === 'confirmed';
     return true;
   });
+
+  const handleUpdateStatus = async (id: string, status: 'confirmed' | 'cancelled') => {
+    setIsUpdating(true);
+    try {
+      await updateAppointmentStatus(id, status);
+    } catch (error) {
+      console.error('Failed to update status', error);
+      alert('Failed to update status');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -38,6 +67,8 @@ export default function AppointmentsPage() {
             <input 
               type="text" 
               placeholder="Search ref or name..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 pr-4 py-2 text-sm bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
             />
           </div>
@@ -54,7 +85,9 @@ export default function AppointmentsPage() {
           className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'pending' ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
         >
           Requires Attention 
-          <span className="ml-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">2</span>
+          <span className="ml-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+            {appointments.filter(a => a.status === 'pending').length}
+          </span>
         </button>
         <button 
           onClick={() => setActiveTab('confirmed')}
@@ -87,23 +120,23 @@ export default function AppointmentsPage() {
               {filtered.map(appt => (
                 <tr key={appt.id} className="hover:bg-[var(--color-surface)]/50 transition-colors">
                   <td className="p-4">
-                    <p className="font-bold text-[var(--color-text-primary)] text-sm">{appt.ref}</p>
-                    <p className="text-sm font-medium text-[var(--color-text-primary)] mt-0.5">{appt.patient}</p>
+                    <p className="font-bold text-[var(--color-text-primary)] text-sm">{appt.referenceNumber}</p>
+                    <p className="text-sm font-medium text-[var(--color-text-primary)] mt-0.5">{appt.patientName}</p>
                     <p className="text-xs text-[var(--color-text-secondary)]">{appt.phone}</p>
                   </td>
                   <td className="p-4">
                     <p className="font-medium text-[var(--color-text-primary)] text-sm">{appt.date}</p>
-                    <p className="text-xs text-[var(--color-primary)] font-semibold mt-0.5">{appt.time}</p>
+                    <p className="text-xs text-[var(--color-primary)] font-semibold mt-0.5">{appt.timeSlot}</p>
                   </td>
-                  <td className="p-4 text-sm text-[var(--color-text-secondary)]">{appt.service}</td>
+                  <td className="p-4 text-sm text-[var(--color-text-secondary)]">{appt.serviceId}</td>
                   <td className="p-4">
-                    <Badge variant={appt.status === 'confirmed' ? 'success' : appt.status === 'pending_payment' ? 'pending' : 'closed'}>
+                    <Badge variant={appt.status === 'confirmed' ? 'success' : appt.status === 'pending' ? 'pending' : 'closed'}>
                       {appt.status.replace('_', ' ').toUpperCase()}
                     </Badge>
                   </td>
                   <td className="p-4 text-right">
                     <Button variant="outline" size="sm" onClick={() => setSelectedAppt(appt)}>
-                      {appt.status === 'pending_payment' ? (
+                      {appt.status === 'pending' ? (
                         <>Verify Payment</>
                       ) : (
                         <>View Details</>
@@ -128,7 +161,7 @@ export default function AppointmentsPage() {
       <Modal 
         isOpen={!!selectedAppt} 
         onClose={() => setSelectedAppt(null)}
-        title={selectedAppt?.status === 'pending_payment' ? "Verify Payment" : "Appointment Details"}
+        title={selectedAppt?.status === 'pending' ? "Verify Payment" : "Appointment Details"}
         size="lg"
       >
         {selectedAppt && (
@@ -136,13 +169,13 @@ export default function AppointmentsPage() {
             <div className="grid grid-cols-2 gap-4 bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)]">
               <div>
                 <p className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider font-semibold">Patient</p>
-                <p className="font-bold text-[var(--color-text-primary)] text-lg">{selectedAppt.patient}</p>
+                <p className="font-bold text-[var(--color-text-primary)] text-lg">{selectedAppt.patientName}</p>
                 <p className="text-sm text-[var(--color-text-secondary)]">{selectedAppt.phone}</p>
               </div>
               <div>
                 <p className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider font-semibold">Schedule</p>
                 <p className="font-bold text-[var(--color-text-primary)]">{selectedAppt.date}</p>
-                <p className="text-sm font-semibold text-[var(--color-primary)]">{selectedAppt.time}</p>
+                <p className="text-sm font-semibold text-[var(--color-primary)]">{selectedAppt.timeSlot}</p>
               </div>
             </div>
 
@@ -152,21 +185,42 @@ export default function AppointmentsPage() {
                 Payment Screenshot
               </h3>
               
-              <div className="aspect-video bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] flex flex-col items-center justify-center text-[var(--color-text-secondary)]">
-                <p className="text-sm mb-2">Simulated Image Viewer</p>
-                <Button variant="outline" size="sm">
-                  <Eye className="w-4 h-4 mr-2" /> View Full Image
-                </Button>
+              <div className="aspect-video bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] flex flex-col items-center justify-center text-[var(--color-text-secondary)] overflow-hidden relative">
+                {selectedAppt.paymentScreenshotUrl ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={selectedAppt.paymentScreenshotUrl} alt="Payment Receipt" className="w-full h-full object-contain" />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="absolute bottom-4 right-4 bg-black/50 text-white hover:bg-black/70 border-none"
+                      onClick={() => window.open(selectedAppt.paymentScreenshotUrl, '_blank')}
+                    >
+                      <Eye className="w-4 h-4 mr-2" /> View Full Image
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-sm mb-2 text-center text-red-400">No payment screenshot uploaded</p>
+                )}
               </div>
             </div>
 
-            {selectedAppt.status === 'pending_payment' && (
+            {selectedAppt.status === 'pending' && (
               <div className="flex gap-3 pt-4 border-t border-[var(--color-border)]">
-                <Button className="flex-1 bg-[var(--color-status-open)] hover:bg-[var(--color-status-open)]">
+                <Button 
+                  className="flex-1 bg-[var(--color-status-open)] hover:bg-[var(--color-status-open)]"
+                  isLoading={isUpdating}
+                  onClick={() => handleUpdateStatus(selectedAppt.id, 'confirmed')}
+                >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
                   Approve & Confirm
                 </Button>
-                <Button variant="outline" className="flex-1 text-red-500 hover:text-red-600 hover:bg-red-50/10 border-red-500/30">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 text-red-500 hover:text-red-600 hover:bg-red-50/10 border-red-500/30"
+                  isLoading={isUpdating}
+                  onClick={() => handleUpdateStatus(selectedAppt.id, 'cancelled')}
+                >
                   <XCircle className="w-4 h-4 mr-2" />
                   Reject & Request Again
                 </Button>

@@ -61,21 +61,30 @@ export function subscribeToReviews(
   callback: (reviews: Review[]) => void,
   status?: ReviewStatus
 ): Unsubscribe {
-  let q = query(
-    collection(getDb(), COLLECTION),
-    orderBy('createdAt', 'desc')
-  );
-  if (status) {
-    q = query(
+  try {
+    let q = query(
       collection(getDb(), COLLECTION),
-      where('status', '==', status),
       orderBy('createdAt', 'desc')
     );
+    if (status) {
+      q = query(
+        collection(getDb(), COLLECTION),
+        where('status', '==', status),
+        orderBy('createdAt', 'desc')
+      );
+    }
+    return onSnapshot(q, (snap) => {
+      const reviews = snap.docs.map(
+        (d) => ({ id: d.id, ...d.data() }) as Review
+      );
+      callback(reviews);
+    }, (error) => {
+      console.error('[reviews] Snapshot error:', error);
+      callback([]);
+    });
+  } catch (error) {
+    console.error('[reviews] Failed to subscribe:', error);
+    callback([]);
+    return () => {};
   }
-  return onSnapshot(q, (snap) => {
-    const reviews = snap.docs.map(
-      (d) => ({ id: d.id, ...d.data() }) as Review
-    );
-    callback(reviews);
-  });
 }

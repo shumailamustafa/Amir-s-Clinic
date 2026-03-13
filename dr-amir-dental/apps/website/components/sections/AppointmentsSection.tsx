@@ -18,6 +18,9 @@ import {
 } from 'lucide-react';
 import { Button, Input } from '@dental/ui';
 import { FloatingTeeth } from '../ui/FloatingTeeth';
+import { useAppointments } from '../../hooks/useAppointments';
+import { createAppointment } from '@dental/firebase';
+import { uploadToCloudinary } from '@dental/firebase';
 
 type BookingStep = 'date' | 'time' | 'info' | 'payment' | 'confirmation';
 
@@ -69,9 +72,13 @@ export function AppointmentsSection() {
   const [paymentScreenshot, setPaymentScreenshot] = useState<File | null>(null);
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [reference, setReference] = useState('');
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const dateString = selectedDate ? selectedDate.toISOString().split('T')[0] : '';
+  const { bookedSlots } = useAppointments(dateString);
 
   const currentStepIndex = STEPS.findIndex(s => s.id === currentStep);
 
@@ -95,10 +102,38 @@ export function AppointmentsSection() {
 
   const handleSubmit = async () => {
     setSubmitting(true);
-    // Simulate submission — will integrate with Firebase later
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setSubmitting(false);
-    goNext();
+    try {
+      let paymentScreenshotUrl = '';
+      if (paymentScreenshot) {
+        paymentScreenshotUrl = await uploadToCloudinary(paymentScreenshot, 'dr-amir-payments');
+      }
+
+      const refNum = `REF-${Date.now().toString(36).toUpperCase()}`;
+      setReference(refNum);
+
+      await createAppointment({
+        patientName,
+        phone: patientPhone,
+        email: '',
+        serviceId: selectedService,
+        date: dateString,
+        timeSlot: selectedTime,
+        referenceNumber: refNum,
+        paymentMethod: 'online',
+        paymentStatus: paymentScreenshot ? 'screenshot_submitted' : 'pending',
+        paymentScreenshotUrl,
+        status: 'pending',
+        notes,
+        createdAt: new Date().toISOString(),
+      });
+      
+      goNext();
+    } catch (error) {
+      console.error('Failed to submit appointment:', error);
+      alert('Failed to submit appointment. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCopyAccount = () => {
@@ -265,19 +300,25 @@ export function AppointmentsSection() {
                 </p>
 
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                  {TIME_SLOTS.map((slot) => (
-                    <button
-                      key={slot}
-                      onClick={() => setSelectedTime(slot)}
-                      className={`py-2.5 px-3 rounded-lg text-sm font-medium border transition-all cursor-pointer ${
-                        selectedTime === slot
-                          ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
-                          : 'border-[var(--color-border)] text-[var(--color-text-primary)] hover:border-[var(--color-primary)]'
-                      }`}
-                    >
-                      {slot}
-                    </button>
-                  ))}
+                  {TIME_SLOTS.map((slot) => {
+                    const isBooked = bookedSlots.includes(slot);
+                    return (
+                      <button
+                        key={slot}
+                        disabled={isBooked}
+                        onClick={() => setSelectedTime(slot)}
+                        className={`py-2.5 px-3 rounded-lg text-sm font-medium border transition-all cursor-pointer ${
+                          isBooked
+                            ? 'bg-[var(--color-surface)] border-[var(--color-surface)] text-[var(--color-text-secondary)]/50 cursor-not-allowed line-through'
+                            : selectedTime === slot
+                            ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                            : 'border-[var(--color-border)] text-[var(--color-text-primary)] hover:border-[var(--color-primary)]'
+                        }`}
+                      >
+                        {slot}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <div className="mt-6 flex justify-between">
@@ -434,7 +475,7 @@ export function AppointmentsSection() {
                   <strong>Time:</strong> {selectedTime}
                 </p>
                 <p className="text-sm text-[var(--color-text-secondary)] mb-6">
-                  <strong>Reference:</strong> REF-{Date.now().toString(36).toUpperCase()}
+                  <strong>Reference:</strong> {reference}
                 </p>
                 <p className="text-sm text-[var(--color-primary)] font-medium bg-[var(--color-primary)]/10 inline-block px-4 py-2 rounded-full">
                   We&apos;ll confirm your appointment via WhatsApp / SMS

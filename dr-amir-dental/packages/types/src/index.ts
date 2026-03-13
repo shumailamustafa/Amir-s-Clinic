@@ -73,7 +73,7 @@ export interface ClinicConfig {
   socialLinks: SocialLinks;
   openHours: OpenHours;
   holidayDates: string[];
-  isHolidayModeOn: boolean;
+  holidayMode: boolean;
 }
 
 // ---------- Service ----------

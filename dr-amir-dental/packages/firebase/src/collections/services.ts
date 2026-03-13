@@ -34,20 +34,29 @@ export function subscribeToServices(
   callback: (services: Service[]) => void,
   visibleOnly = false
 ): Unsubscribe {
-  let q = query(collection(getDb(), COLLECTION), orderBy('order', 'asc'));
-  if (visibleOnly) {
-    q = query(
-      collection(getDb(), COLLECTION),
-      where('isVisible', '==', true),
-      orderBy('order', 'asc')
-    );
+  try {
+    let q = query(collection(getDb(), COLLECTION), orderBy('order', 'asc'));
+    if (visibleOnly) {
+      q = query(
+        collection(getDb(), COLLECTION),
+        where('isVisible', '==', true),
+        orderBy('order', 'asc')
+      );
+    }
+    return onSnapshot(q, (snap) => {
+      const services = snap.docs.map(
+        (d) => ({ id: d.id, ...d.data() }) as Service
+      );
+      callback(services);
+    }, (error) => {
+      console.error('[services] Snapshot error:', error);
+      callback([]);
+    });
+  } catch (error) {
+    console.error('[services] Failed to subscribe:', error);
+    callback([]);
+    return () => {};
   }
-  return onSnapshot(q, (snap) => {
-    const services = snap.docs.map(
-      (d) => ({ id: d.id, ...d.data() }) as Service
-    );
-    callback(services);
-  });
 }
 
 export async function getServiceById(id: string): Promise<Service | null> {

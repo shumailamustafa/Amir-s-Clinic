@@ -9,7 +9,12 @@ interface ThemeContextType {
   toggleTheme: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const defaultContext: ThemeContextType = {
+  theme: 'light',
+  toggleTheme: () => {},
+};
+
+const ThemeContext = createContext<ThemeContextType>(defaultContext);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light');
@@ -40,23 +45,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Prevent hydration mismatch by not rendering until mounted
-  // The layout.tsx script already applies the correct CSS variables instantly
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={mounted ? { theme, toggleTheme } : defaultContext}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
 export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
+  return useContext(ThemeContext);
 }

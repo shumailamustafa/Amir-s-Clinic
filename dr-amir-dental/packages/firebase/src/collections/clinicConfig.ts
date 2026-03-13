@@ -12,9 +12,14 @@ const COLLECTION = 'clinicConfig';
 const DOC_ID = 'main';
 
 export async function getClinicConfig(): Promise<ClinicConfig | null> {
-  const ref = doc(getDb(), COLLECTION, DOC_ID);
-  const snap = await getDoc(ref);
-  return snap.exists() ? (snap.data() as ClinicConfig) : null;
+  try {
+    const ref = doc(getDb(), COLLECTION, DOC_ID);
+    const snap = await getDoc(ref);
+    return snap.exists() ? (snap.data() as ClinicConfig) : null;
+  } catch (error) {
+    console.error('[clinicConfig] Failed to get clinic config:', error);
+    return null;
+  }
 }
 
 export async function updateClinicConfig(
@@ -27,8 +32,21 @@ export async function updateClinicConfig(
 export function subscribeToClinicConfig(
   callback: (config: ClinicConfig | null) => void
 ): Unsubscribe {
-  const ref = doc(getDb(), COLLECTION, DOC_ID);
-  return onSnapshot(ref, (snap) => {
-    callback(snap.exists() ? (snap.data() as ClinicConfig) : null);
-  });
+  try {
+    const ref = doc(getDb(), COLLECTION, DOC_ID);
+    return onSnapshot(
+      ref,
+      (snap) => {
+        callback(snap.exists() ? (snap.data() as ClinicConfig) : null);
+      },
+      (error) => {
+        console.error('[clinicConfig] Snapshot error:', error);
+        callback(null);
+      }
+    );
+  } catch (error) {
+    console.error('[clinicConfig] Failed to subscribe:', error);
+    callback(null);
+    return () => {};
+  }
 }

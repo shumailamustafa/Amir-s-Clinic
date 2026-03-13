@@ -5,8 +5,11 @@ import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, MessageCircle, Send, Clock, User } from 'lucide-react';
 import { Button, Input } from '@dental/ui';
 import { FloatingTeeth } from '../ui/FloatingTeeth';
+import { useClinicStatus } from '../../hooks/useClinicStatus';
+import { createMessage } from '@dental/firebase';
 
 export function ContactSection() {
+  const { config } = useClinicStatus();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -17,36 +20,53 @@ export function ContactSection() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    // Will integrate with Firebase later
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setSubmitting(false);
-    setSubmitted(true);
-    setName('');
-    setEmail('');
-    setPhone('');
-    setMessage('');
-    setTimeout(() => setSubmitted(false), 5000);
+    try {
+      await createMessage({
+        name,
+        email,
+        phone,
+        message,
+        status: 'unread',
+        createdAt: new Date().toISOString(),
+      });
+      setSubmitted(true);
+      setName('');
+      setEmail('');
+      setPhone('');
+      setMessage('');
+      setTimeout(() => setSubmitted(false), 5000);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  const clinicPhone = config?.phone || '0300-1234567';
+  const clinicEmail = config?.email || 'info@dramirdental.com';
+  const clinicAddress = config?.address || 'Main Boulevard, Gulberg III, Lahore';
+  const clinicWhatsapp = config?.whatsapp || '923001234567';
 
   const contactInfo = [
     {
       icon: Phone,
       title: 'Phone',
-      value: '0300-1234567',
-      href: 'tel:+923001234567',
+      value: clinicPhone,
+      href: `tel:${clinicPhone.replace(/[^0-9+]/g, '')}`,
       description: 'Call us anytime during working hours',
     },
     {
       icon: Mail,
       title: 'Email',
-      value: 'info@dramirdental.com',
-      href: 'mailto:info@dramirdental.com',
+      value: clinicEmail,
+      href: `mailto:${clinicEmail}`,
       description: 'We reply within 24 hours',
     },
     {
       icon: MapPin,
       title: 'Address',
-      value: 'Main Boulevard, Gulberg III, Lahore',
+      value: clinicAddress,
       href: 'https://maps.google.com',
       description: 'Visit us at our clinic',
     },
@@ -129,7 +149,7 @@ export function ContactSection() {
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              href="https://wa.me/923001234567"
+              href={`https://wa.me/${clinicWhatsapp.replace(/[^0-9]/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 bg-[var(--color-whatsapp-green)] text-white rounded-xl p-4 hover:opacity-90 transition-opacity"

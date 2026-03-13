@@ -3,9 +3,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle } from 'lucide-react';
+import { useClinicStatus } from '../../hooks/useClinicStatus';
 
 export function WhatsAppButton() {
-  const whatsappNumber = '923001234567';
+  const { config } = useClinicStatus();
+  const whatsappNumber = config?.whatsapp?.replace(/[^0-9]/g, '') || '923001234567';
   const message = encodeURIComponent(
     'Hello! I would like to book an appointment at Dr. Amir Dental Care.'
   );

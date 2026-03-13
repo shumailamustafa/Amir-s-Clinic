@@ -9,6 +9,8 @@ import {
   query,
   where,
   orderBy,
+  onSnapshot,
+  type Unsubscribe,
 } from 'firebase/firestore';
 import { getDb } from '../config';
 import type { BlogPost, BlogStatus } from '@dental/types';
@@ -86,4 +88,52 @@ export async function updateBlogPost(
 export async function deleteBlogPost(id: string): Promise<void> {
   const ref = doc(getDb(), COLLECTION, id);
   await deleteDoc(ref);
+}
+
+export function subscribeToBlogPosts(
+  callback: (posts: BlogPost[]) => void,
+  status?: BlogStatus,
+  category?: string
+): Unsubscribe {
+  try {
+    let q = query(
+      collection(getDb(), COLLECTION),
+      orderBy('createdAt', 'desc')
+    );
+
+    if (status && category) {
+      q = query(
+        collection(getDb(), COLLECTION),
+        where('status', '==', status),
+        where('category', '==', category),
+        orderBy('createdAt', 'desc')
+      );
+    } else if (status) {
+      q = query(
+        collection(getDb(), COLLECTION),
+        where('status', '==', status),
+        orderBy('createdAt', 'desc')
+      );
+    } else if (category) {
+      q = query(
+        collection(getDb(), COLLECTION),
+        where('category', '==', category),
+        orderBy('createdAt', 'desc')
+      );
+    }
+
+    return onSnapshot(q, (snap) => {
+      const posts = snap.docs.map(
+        (d) => ({ id: d.id, ...d.data() }) as BlogPost
+      );
+      callback(posts);
+    }, (error) => {
+      console.error('[blogPosts] Snapshot error:', error);
+      callback([]);
+    });
+  } catch (error) {
+    console.error('[blogPosts] Failed to subscribe:', error);
+    callback([]);
+    return () => {};
+  }
 }
