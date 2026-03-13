@@ -1,16 +1,32 @@
 # Environments
-dr-amir-dental/.env
-dr-amir-dental/.env.local
-dr-amir-dental/.env.*.local
-dr-amir-dental/.env.example
-dr-amir-dental/apps/website/.env.local
-dr-amir-dental/apps/admin/.env.local
+.env
+.env.local
+.env.*.local
+.env.example
+**/.env.local
+**/.env.example
 
 # Dependencies
-dr-amir-dental/node_modules/
-dr-amir-dental/.pnpm-store/
+node_modules/
+**/node_modules/
+.pnpm-store/
+**/.pnpm-store/
 
-# Next.js
-dr-amir-dental/.next/
-dr-amir-dental/apps/website/.next/
-dr-amir-dental/apps/admin/.next/
+# Next.js & Build
+.next/
+**/.next/
+out/
+dist/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Turbo
+.turbo/
+**/.turbo/
+
+# Debug
+*-debug.log*
