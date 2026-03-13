@@ -1,0 +1,16 @@
+# Environments
+dr-amir-dental/.env
+dr-amir-dental/.env.local
+dr-amir-dental/.env.*.local
+dr-amir-dental/.env.example
+dr-amir-dental/apps/website/.env.local
+dr-amir-dental/apps/admin/.env.local
+
+# Dependencies
+dr-amir-dental/node_modules/
+dr-amir-dental/.pnpm-store/
+
+# Next.js
+dr-amir-dental/.next/
+dr-amir-dental/apps/website/.next/
+dr-amir-dental/apps/admin/.next/
