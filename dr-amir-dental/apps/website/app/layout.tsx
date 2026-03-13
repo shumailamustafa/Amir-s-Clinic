@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '../components/providers/ThemeProvider';
+import { AnalyticsProvider } from '../components/providers/AnalyticsProvider';
+import { LocalBusinessSchema } from '../lib/schema';
+import { constructMetadata } from '../lib/metadata';
 import './globals.css';
 
 const inter = Inter({
@@ -9,12 +12,7 @@ const inter = Inter({
   display: 'swap',
 });
 
-export const metadata: Metadata = {
-  title: 'Dr. Amir Dental Care — Trusted Dentistry for a Lifetime of Smiles',
-  description:
-    'Professional dental clinic offering tooth implants, root canal treatment, scaling, aesthetic crowns, teeth whitening, orthodontics and more. Book your appointment today.',
-  keywords: ['dentist', 'dental clinic', 'tooth implant', 'root canal', 'teeth whitening', 'orthodontics'],
-};
+export const metadata: Metadata = constructMetadata();
 
 export default function RootLayout({
   children,
@@ -38,11 +36,13 @@ export default function RootLayout({
             `,
           }}
         />
+        <LocalBusinessSchema />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased bg-[var(--color-bg)] text-[var(--color-text-primary)] min-h-screen flex flex-col`}>
         <ThemeProvider>
           {children}
         </ThemeProvider>
+        <AnalyticsProvider measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
       </body>
     </html>
   );
