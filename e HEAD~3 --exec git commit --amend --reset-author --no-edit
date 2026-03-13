@@ -1,0 +1,17 @@
+[33mcommit a60d3f3f59ddfaf9e45768c28c6bd71ac01455a1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: shumailamustafa <mshumaila360@gmail.com>
+Date:   Fri Mar 13 23:41:00 2026 +0500
+
+    ADded readme
+
+[33mcommit 27dc7ebf1b3f98f3e669e1882578252c25a6410c[m
+Author: moazzam-samoo <moazzamsamoo819@gmail.com>
+Date:   Fri Mar 13 22:22:30 2026 +0500
+
+    chore: updated gitignore to exclude environment secrets
+
+[33mcommit 6ef3256beaf3a1f4800e0bc849a4fa6d175a665d[m
+Author: moazzam-samoo <moazzamsamoo819@gmail.com>
+Date:   Fri Mar 13 22:19:55 2026 +0500
+
+    bug fixes: resolved firebase initialization and about section null-safety
