@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { ThemeProvider } from '../components/providers/ThemeProvider';
 import './globals.css';
 
 const inter = Inter({
@@ -9,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Admin Panel — Dr. Amir Dental Care',
-  description: 'Admin dashboard for managing Dr. Amir Dental Care clinic.',
+  title: 'Admin Portal — Dr. Amir Dental Care',
+  description: 'Management dashboard for Dr. Amir Dental Care',
 };
 
 export default function RootLayout({
@@ -37,7 +38,9 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
