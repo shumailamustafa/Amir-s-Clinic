@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   Light Theme (Default)
+   ======================================== */
+:root {
+  --color-primary: #0D6EFD;
+  --color-bg: #FFFFFF;
+  --color-surface: #E8F4FD;
+  --color-text-primary: #1A1A2E;
+  --color-text-secondary: #555555;
+  --color-nav-bg: #FFFFFF;
+  --color-border: #D0D7E3;
+  --color-status-open: #27AE60;
+  --color-status-closed: #C0392B;
+  --color-button-hover: #0B5ED7;
+  --color-footer-bg: #1A1A2E;
+  --color-card-shadow: rgba(13, 110, 253, 0.08);
+  --color-overlay: rgba(0, 0, 0, 0.5);
+  --color-star-gold: #F5A623;
+  --color-whatsapp-green: #25D366;
+
+  --shadow-card: 0 2px 12px rgba(13, 110, 253, 0.08);
+  --shadow-card-hover: 0 8px 24px rgba(13, 110, 253, 0.15);
+}
+
+/* ========================================
+   Dark Theme
+   ======================================== */
+[data-theme="dark"] {
+  --color-primary: #4D9FFF;
+  --color-bg: #0F1117;
+  --color-surface: #1A1F2E;
+  --color-text-primary: #E8EAF0;
+  --color-text-secondary: #9AA0B4;
+  --color-nav-bg: #141824;
+  --color-border: #2A2F42;
+  --color-status-open: #2ECC71;
+  --color-status-closed: #E74C3C;
+  --color-button-hover: #6AB0FF;
+  --color-footer-bg: #0A0D14;
+  --color-card-shadow: rgba(77, 159, 255, 0.08);
+  --color-overlay: rgba(0, 0, 0, 0.7);
+  --color-star-gold: #F5A623;
+  --color-whatsapp-green: #25D366;
+
+  --shadow-card: 0 2px 12px rgba(77, 159, 255, 0.08);
+  --shadow-card-hover: 0 8px 24px rgba(77, 159, 255, 0.15);
+}
+
+/* ========================================
+   Global Styles
+   ======================================== */
+* {
+  transition: background-color 300ms ease, color 300ms ease, border-color 300ms ease;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-inter), 'Inter', sans-serif;
+}
+
+[data-theme="dark"] img:not(.no-dim) {
+  opacity: 0.85;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::selection {
+  background-color: var(--color-primary);
+  color: white;
+}
