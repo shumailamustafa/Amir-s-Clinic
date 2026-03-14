@@ -28,27 +28,22 @@ export async function getReviewsByStatus(
   status: ReviewStatus
 ): Promise<FirebaseResult<Review[]>> {
   return firebaseOperation('getReviewsByStatus', CONTEXT, async () => {
-    // To avoid missing index errors, we query all reviews ordered by createdAt
-    // and filter by status in memory.
-    const q = query(
-      collection(getDb(), COLLECTION),
-      orderBy('createdAt', 'desc')
-    );
+    const q = query(collection(getDb(), COLLECTION));
     const snap = await getDocs(q);
     return snap.docs
-      .map((d) => ({ id: d.id, ...d.data() }) as Review)
-      .filter(r => r.status === status);
+      .map((d) => ({ id: d.id, ...d.data() } as Review))
+      .filter(r => r.status === status)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   });
 }
 
 export async function getAllReviews(): Promise<FirebaseResult<Review[]>> {
   return firebaseOperation('getAllReviews', CONTEXT, async () => {
-    const q = query(
-      collection(getDb(), COLLECTION),
-      orderBy('createdAt', 'desc')
-    );
+    const q = query(collection(getDb(), COLLECTION));
     const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Review);
+    return snap.docs
+      .map((d) => ({ id: d.id, ...d.data() } as Review))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   });
 }
 
@@ -78,21 +73,20 @@ export function subscribeToReviews(
 ): Unsubscribe {
   const logger = createLogger(CONTEXT);
   
-  // To avoid missing index errors, we subscribe to all reviews ordered by createdAt
-  // and filter by status in memory if needed.
-  const q = query(
-    collection(getDb(), COLLECTION),
-    orderBy('createdAt', 'desc')
-  );
+  const q = query(collection(getDb(), COLLECTION));
 
   return onSnapshot(q, (snap) => {
     let reviews = snap.docs.map(
       (d) => ({ id: d.id, ...d.data() }) as Review
     );
 
+    // Filter by status in memory
     if (status) {
       reviews = reviews.filter(r => r.status === status);
     }
+
+    // Sort by createdAt desc in memory
+    reviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     callback(reviews);
   }, (error) => {

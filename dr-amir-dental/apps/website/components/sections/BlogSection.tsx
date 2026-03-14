@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { BookOpen, Clock, Tag, ChevronRight, Search } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { BookOpen, Clock, Tag, ChevronRight, Search, X } from 'lucide-react';
 import { FloatingTeeth } from '../ui/FloatingTeeth';
 
 // Placeholder blog posts — will come from Firestore
@@ -76,6 +76,7 @@ import { useBlog } from '../../hooks/useBlog';
 export function BlogSection() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedPost, setSelectedPost] = useState<any | null>(null);
   
   const { posts } = useBlog(true); // only published posts
   
@@ -167,6 +168,7 @@ export function BlogSection() {
               transition={{ delay: index * 0.1, duration: 0.5 }}
               whileHover={{ y: -4 }}
               className="bg-[var(--color-bg)] rounded-2xl border border-[var(--color-border)] shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] transition-all overflow-hidden group cursor-pointer"
+              onClick={() => setSelectedPost(post)}
             >
               {/* Image Placeholder */}
               <div className="aspect-video bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-surface)] flex items-center justify-center">
@@ -216,6 +218,92 @@ export function BlogSection() {
           </div>
         )}
       </div>
+
+      {/* Blog Detail Modal */}
+      <AnimatePresence>
+        {selectedPost && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-end"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {/* Backdrop */}
+            <motion.div
+              className="absolute inset-0 bg-[var(--color-overlay)] backdrop-blur-sm"
+              onClick={() => setSelectedPost(null)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+
+            {/* Modal Panel (slides from right) */}
+            <motion.div
+              className="relative w-full max-w-lg h-full bg-[var(--color-bg)] shadow-2xl overflow-y-auto"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setSelectedPost(null)}
+                className="absolute top-4 right-4 p-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors cursor-pointer z-10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="p-8">
+                {/* Category + Reading Time */}
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2.5 py-1 rounded-full">
+                    <Tag className="w-3 h-3" />
+                    {selectedPost.category}
+                  </span>
+                  <span className="flex items-center gap-1 text-xs text-[var(--color-text-secondary)]">
+                    <Clock className="w-3 h-3" />
+                    {selectedPost.readingTime}
+                  </span>
+                </div>
+
+                {/* Title */}
+                <h3 className="text-3xl font-bold text-[var(--color-text-primary)] mb-4 leading-tight">
+                  {selectedPost.title}
+                </h3>
+
+                {/* Date */}
+                <p className="text-sm text-[var(--color-text-secondary)] mb-8">
+                  Published on {new Date(selectedPost.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+
+                <div className="prose prose-sm max-w-none text-[var(--color-text-primary)]">
+                  {/* Image placeholder in detail */}
+                  <div className="aspect-video bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-surface)] flex items-center justify-center rounded-2xl mb-8">
+                    <BookOpen className="w-16 h-16 text-[var(--color-primary)]/20" />
+                  </div>
+
+                  {/* Blog Content */}
+                  <div className="space-y-4 leading-relaxed whitespace-pre-wrap">
+                    {selectedPost.content || posts.find(p => p.id === selectedPost.id)?.content || selectedPost.excerpt + "\n\n(Full content of this post will be managed through the admin panel. This is an overview of the article's key points and recommendations from Dr. Amir's dental health guide.)"}
+                  </div>
+                </div>
+
+                {/* Share / Tags Placeholder */}
+                <div className="mt-12 pt-8 border-t border-[var(--color-border)]">
+                  <h4 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">Related Topics</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {['Teeth Hygiene', 'Dental Care', 'Health Tips'].map(tag => (
+                      <span key={tag} className="text-xs text-[var(--color-text-secondary)] bg-[var(--color-surface)] px-3 py-1.2 rounded-md">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

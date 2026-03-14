@@ -57,34 +57,18 @@ export async function getBlogPosts(
   category?: string
 ): Promise<FirebaseResult<BlogPost[]>> {
   return firebaseOperation('getBlogPosts', CONTEXT, async () => {
-    let q = query(
-      collection(getDb(), COLLECTION),
-      orderBy('createdAt', 'desc')
-    );
-
-    if (status && category) {
-      q = query(
-        collection(getDb(), COLLECTION),
-        where('status', '==', status),
-        where('category', '==', category),
-        orderBy('createdAt', 'desc')
-      );
-    } else if (status) {
-      q = query(
-        collection(getDb(), COLLECTION),
-        where('status', '==', status),
-        orderBy('createdAt', 'desc')
-      );
-    } else if (category) {
-      q = query(
-        collection(getDb(), COLLECTION),
-        where('category', '==', category),
-        orderBy('createdAt', 'desc')
-      );
-    }
-
+    const q = query(collection(getDb(), COLLECTION));
     const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as BlogPost);
+    let posts = snap.docs.map((d) => ({ id: d.id, ...d.data() } as BlogPost));
+
+    if (status) posts = posts.filter(p => p.status === status);
+    if (category) posts = posts.filter(p => p.category === category);
+
+    return posts.sort((a, b) => {
+      const dateA = new Date(a.publishedAt || a.createdAt).getTime();
+      const dateB = new Date(b.publishedAt || b.createdAt).getTime();
+      return dateB - dateA;
+    });
   });
 }
 
@@ -111,36 +95,20 @@ export function subscribeToBlogPosts(
   category?: string
 ): Unsubscribe {
   const logger = createLogger(CONTEXT);
-  let q = query(
-    collection(getDb(), COLLECTION),
-    orderBy('createdAt', 'desc')
-  );
-
-  if (status && category) {
-    q = query(
-      collection(getDb(), COLLECTION),
-      where('status', '==', status),
-      where('category', '==', category),
-      orderBy('createdAt', 'desc')
-    );
-  } else if (status) {
-    q = query(
-      collection(getDb(), COLLECTION),
-      where('status', '==', status),
-      orderBy('createdAt', 'desc')
-    );
-  } else if (category) {
-    q = query(
-      collection(getDb(), COLLECTION),
-      where('category', '==', category),
-      orderBy('createdAt', 'desc')
-    );
-  }
+  const q = query(collection(getDb(), COLLECTION));
 
   return onSnapshot(q, (snap) => {
-    const posts = snap.docs.map(
-      (d) => ({ id: d.id, ...d.data() }) as BlogPost
-    );
+    let posts = snap.docs.map((d) => ({ id: d.id, ...d.data() } as BlogPost));
+
+    if (status) posts = posts.filter(p => p.status === status);
+    if (category) posts = posts.filter(p => p.category === category);
+
+    posts.sort((a, b) => {
+      const dateA = new Date(a.publishedAt || a.createdAt).getTime();
+      const dateB = new Date(b.publishedAt || b.createdAt).getTime();
+      return dateB - dateA;
+    });
+
     callback(posts);
   }, (error) => {
     logger.error({ error: formatError(error) }, 'BlogPosts subscription error');

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, MessageSquarePlus, Send, ChevronLeft, ChevronRight, User, Phone } from 'lucide-react';
+import { Star, MessageSquarePlus, Send, ChevronLeft, ChevronRight, User, Phone, CheckCircle } from 'lucide-react';
 import { Button, Input } from '@dental/ui';
 import { FloatingTeeth } from '../ui/FloatingTeeth';
 import { StarRating } from '../ui/StarRating';
@@ -52,6 +52,7 @@ export function ReviewsSection() {
   const [patientPhone, setPatientPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [scrollIndex, setScrollIndex] = useState(0);
+  const [showSuccess, setShowSuccess] = useState(false);
   
   const { reviews, loading } = useReviews(true);
 
@@ -100,7 +101,8 @@ const visibleCount = 3;
       if (error) {
         alert(`Failed to submit review: ${error}`);
       } else {
-        alert('Thank you! Your review has been submitted for approval.');
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 1000); // Show for exactly 1 second as requested
         setShowForm(false);
         setReviewerName('');
         setPatientPhone('');
@@ -312,6 +314,39 @@ const visibleCount = 3;
           )}
         </div>
       </div>
+
+      {/* Success Notification */}
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: 100, x: '-50%', scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, x: '-50%', scale: 1 }}
+            exit={{ opacity: 0, y: 20, x: '-50%', scale: 0.9 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            className="fixed bottom-12 left-1/2 z-[100] bg-[var(--color-bg)] border-2 border-[var(--color-status-open)]/40 rounded-3xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-5 min-w-[340px] backdrop-blur-md"
+          >
+            <motion.div 
+              initial={{ scale: 0, rotate: -45 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.1, type: 'spring', damping: 12 }}
+              className="w-12 h-12 rounded-2xl bg-[var(--color-status-open)]/20 flex items-center justify-center shadow-inner"
+            >
+              <CheckCircle className="w-7 h-7 text-[var(--color-status-open)]" />
+            </motion.div>
+            <div>
+              <p className="font-extrabold text-[var(--color-text-primary)] text-lg tracking-tight">Review Submitted!</p>
+              <p className="text-sm text-[var(--color-text-secondary)] font-medium">Thank you for your valuable feedback.</p>
+            </div>
+            
+            {/* Subtle pulse background */}
+            <motion.div 
+              className="absolute inset-0 rounded-3xl bg-[var(--color-status-open)]/5 -z-10"
+              animate={{ scale: [1, 1.02, 1] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
