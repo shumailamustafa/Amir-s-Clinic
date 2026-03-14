@@ -10,18 +10,17 @@ export function useBlog(publishedOnly = true) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    try {
-      const unsubscribe = subscribeToBlogPosts((data: BlogPost[]) => {
+    const unsubscribe = subscribeToBlogPosts((data, subError) => {
+      if (subError) {
+        setError(new Error(subError));
+      } else {
         setPosts(data);
-        setLoading(false);
-      }, publishedOnly ? 'published' : undefined);
-
-      return () => unsubscribe();
-    } catch (err) {
-      console.error('Error subscribing to blog posts:', err);
-      setError(err instanceof Error ? err : new Error('Failed to subscribe to blog posts'));
+        setError(null);
+      }
       setLoading(false);
-    }
+    }, publishedOnly ? 'published' : undefined);
+
+    return () => unsubscribe();
   }, [publishedOnly]);
 
   return { posts, loading, error };

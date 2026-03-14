@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar,
@@ -15,10 +15,14 @@ import {
   CreditCard,
   Copy,
   Check,
+  DollarSign,
 } from 'lucide-react';
 import { Button, Input } from '@dental/ui';
 import { FloatingTeeth } from '../ui/FloatingTeeth';
 import { useAppointments } from '../../hooks/useAppointments';
+import { useReviews } from '../../hooks/useReviews';
+import { useServices } from '../../hooks/useServices';
+import { useBookingStore } from '../../stores/useBookingStore';
 import { createAppointment } from '@dental/firebase';
 import { uploadToCloudinary } from '@dental/firebase';
 
@@ -40,10 +44,8 @@ const TIME_SLOTS = [
   '07:00 PM', '07:30 PM',
 ];
 
-const SERVICES_LIST = [
-  'Dental Implants', 'Root Canal Treatment', 'Teeth Whitening',
-  'Aesthetic Crowns', 'Orthodontics', 'Scaling & Cleaning', 'General Checkup',
-];
+// Services will be fetched from Firebase
+const SERVICES_LIST: string[] = [];
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];
@@ -70,9 +72,41 @@ export function AppointmentsSection() {
   const [selectedService, setSelectedService] = useState('');
   const [notes, setNotes] = useState('');
   const [paymentScreenshot, setPaymentScreenshot] = useState<File | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cash'>('online');
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [reference, setReference] = useState('');
+  const { reviews } = useReviews(true);
+  const { services, loading: servicesLoading } = useServices();
+  const { preSelectedService, clearPreSelectedService } = useBookingStore();
+
+  const servicesList = services.map(s => s.name);
+
+  // Auto-fill service from store
+  useEffect(() => {
+    if (preSelectedService) {
+      const targetService = services.find(s => s.id === preSelectedService || s.name === preSelectedService);
+      if (targetService) {
+        setSelectedService(targetService.name);
+        clearPreSelectedService();
+      }
+    }
+  }, [preSelectedService, services, clearPreSelectedService]);
+  const [resetTimer, setResetTimer] = useState<number | null>(null);
+
+  const resetForm = () => {
+    setCurrentStep('date');
+    setSelectedDate(null);
+    setSelectedTime('');
+    setPatientName('');
+    setPatientPhone('');
+    setSelectedService('');
+    setNotes('');
+    setPaymentScreenshot(null);
+    setPaymentMethod('online');
+    setReference('');
+    setResetTimer(null);
+  };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -102,38 +136,43 @@ export function AppointmentsSection() {
 
   const handleSubmit = async () => {
     setSubmitting(true);
-    try {
-      let paymentScreenshotUrl = '';
-      if (paymentScreenshot) {
-        paymentScreenshotUrl = await uploadToCloudinary(paymentScreenshot, 'dr-amir-payments');
+    let paymentScreenshotUrl = '';
+    
+    if (paymentScreenshot) {
+      const { data, error: uploadError } = await uploadToCloudinary(paymentScreenshot, 'dr-amir-payments');
+      if (uploadError) {
+        alert(`Failed to upload screenshot: ${uploadError}`);
+        setSubmitting(false);
+        return;
       }
-
-      const refNum = `REF-${Date.now().toString(36).toUpperCase()}`;
-      setReference(refNum);
-
-      await createAppointment({
-        patientName,
-        phone: patientPhone,
-        email: '',
-        serviceId: selectedService,
-        date: dateString,
-        timeSlot: selectedTime,
-        referenceNumber: refNum,
-        paymentMethod: 'online',
-        paymentStatus: paymentScreenshot ? 'screenshot_submitted' : 'pending',
-        paymentScreenshotUrl,
-        status: 'pending',
-        notes,
-        createdAt: new Date().toISOString(),
-      });
-      
-      goNext();
-    } catch (error) {
-      console.error('Failed to submit appointment:', error);
-      alert('Failed to submit appointment. Please try again.');
-    } finally {
-      setSubmitting(false);
+      paymentScreenshotUrl = data || '';
     }
+
+    const refNum = `REF-${Date.now().toString(36).toUpperCase()}`;
+    setReference(refNum);
+
+    const { error } = await createAppointment({
+      patientName,
+      phone: patientPhone,
+      email: '',
+      serviceId: selectedService,
+      date: dateString,
+      timeSlot: selectedTime,
+      referenceNumber: refNum,
+      paymentMethod,
+      paymentStatus: paymentMethod === 'online' ? (paymentScreenshot ? 'screenshot_submitted' : 'pending') : 'confirmed',
+      paymentScreenshotUrl,
+      status: 'pending',
+      notes,
+      createdAt: new Date().toISOString(),
+    });
+    
+    if (error) {
+      alert(`Failed to submit appointment: ${error}`);
+    } else {
+      goNext();
+    }
+    setSubmitting(false);
   };
 
   const handleCopyAccount = () => {
@@ -350,16 +389,22 @@ export function AppointmentsSection() {
                   />
                   <div>
                     <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">Service</label>
+                    {servicesLoading ? (
+                    <div className="h-10 w-full animate-pulse bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]" />
+                  ) : (
                     <select
                       value={selectedService}
                       onChange={(e) => setSelectedService(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                      className="w-full h-12 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] px-4 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 transition-all appearance-none cursor-pointer"
                     >
                       <option value="">Select a service</option>
-                      {SERVICES_LIST.map(s => (
-                        <option key={s} value={s}>{s}</option>
+                      {servicesList.map((service) => (
+                        <option key={service} value={service}>
+                          {service}
+                        </option>
                       ))}
                     </select>
+                  )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">Notes (optional)</label>
@@ -383,60 +428,120 @@ export function AppointmentsSection() {
             {/* Step 4: Payment Screenshot Upload */}
             {currentStep === 'payment' && (
               <motion.div key="payment" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Payment</h3>
+                <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Payment Method</h3>
                 <p className="text-sm text-[var(--color-text-secondary)] mb-6">
-                  Send your fee and upload the screenshot for verification
+                  Choose how you want to pay for your consultation
                 </p>
 
-                {/* Account Details */}
-                <div className="bg-[var(--color-surface)] rounded-xl p-5 mb-6 border border-[var(--color-border)]">
-                  <h4 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">Payment Details</h4>
-                  <div className="space-y-2 text-sm text-[var(--color-text-secondary)]">
-                    <p><strong>JazzCash:</strong> 0300-1234567</p>
-                    <p><strong>Account Title:</strong> Dr. Amir</p>
-                    <p><strong>Consultation Fee:</strong> Rs. 1,500</p>
-                  </div>
+                {/* Payment Selection Cards */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
                   <button
-                    onClick={handleCopyAccount}
-                    className="mt-3 flex items-center gap-2 text-sm text-[var(--color-primary)] hover:underline cursor-pointer"
+                    onClick={() => setPaymentMethod('online')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left cursor-pointer ${
+                      paymentMethod === 'online'
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5'
+                        : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/30'
+                    }`}
                   >
-                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    {copied ? 'Copied!' : 'Copy account details'}
+                    <div className="w-10 h-10 rounded-lg bg-[var(--color-primary)]/10 flex items-center justify-center mb-3 text-[var(--color-primary)]">
+                       <CreditCard className="w-5 h-5" />
+                    </div>
+                    <p className="font-bold text-[var(--color-text-primary)] text-sm mb-1">Online Payment</p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">JazzCash / Screenshot</p>
+                  </button>
+
+                  <button
+                    onClick={() => setPaymentMethod('cash')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left cursor-pointer ${
+                      paymentMethod === 'cash'
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5'
+                        : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/30'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-[var(--color-primary)]/10 flex items-center justify-center mb-3 text-[var(--color-primary)]">
+                       <DollarSign className="w-5 h-5" />
+                    </div>
+                    <p className="font-bold text-[var(--color-text-primary)] text-sm mb-1">Pay at Clinic</p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">Cash on arrival</p>
                   </button>
                 </div>
 
-                {/* Screenshot Upload */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
-                    Upload Payment Screenshot
-                  </label>
-                  <label
-                    className={`flex flex-col items-center justify-center w-full h-32 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${
-                      paymentScreenshot
-                        ? 'border-[var(--color-status-open)] bg-[var(--color-status-open)]/5'
-                        : 'border-[var(--color-border)] hover:border-[var(--color-primary)] bg-[var(--color-surface)]'
-                    }`}
-                  >
-                    {paymentScreenshot ? (
-                      <div className="text-center">
-                        <CheckCircle2 className="w-8 h-8 text-[var(--color-status-open)] mx-auto mb-2" />
-                        <p className="text-sm text-[var(--color-text-primary)] font-medium">{paymentScreenshot.name}</p>
-                        <p className="text-xs text-[var(--color-text-secondary)]">Click to change</p>
+                <AnimatePresence mode="wait">
+                  {paymentMethod === 'online' ? (
+                    <motion.div
+                      key="online"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                    >
+                      {/* Account Details */}
+                      <div className="bg-[var(--color-surface)] rounded-xl p-5 mb-6 border border-[var(--color-border)]">
+                        <h4 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">Payment Details</h4>
+                        <div className="space-y-2 text-sm text-[var(--color-text-secondary)]">
+                          <p><strong>JazzCash:</strong> 0300-1234567</p>
+                          <p><strong>Account Title:</strong> Dr. Amir</p>
+                          <p><strong>Consultation Fee:</strong> Rs. 1,500</p>
+                        </div>
+                        <button
+                          onClick={handleCopyAccount}
+                          className="mt-3 flex items-center gap-2 text-sm text-[var(--color-primary)] hover:underline cursor-pointer"
+                        >
+                          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                          {copied ? 'Copied!' : 'Copy account details'}
+                        </button>
                       </div>
-                    ) : (
-                      <div className="text-center">
-                        <Upload className="w-8 h-8 text-[var(--color-text-secondary)] mx-auto mb-2" />
-                        <p className="text-sm text-[var(--color-text-secondary)]">Click or drag to upload</p>
+
+                      {/* Screenshot Upload */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
+                          Upload Payment Screenshot
+                        </label>
+                        <label
+                          className={`flex flex-col items-center justify-center w-full h-32 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${
+                            paymentScreenshot
+                              ? 'border-[var(--color-status-open)] bg-[var(--color-status-open)]/5'
+                              : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/30 bg-[var(--color-surface)]'
+                          }`}
+                        >
+                          {paymentScreenshot ? (
+                            <div className="text-center">
+                              <CheckCircle2 className="w-8 h-8 text-[var(--color-status-open)] mx-auto mb-2" />
+                              <p className="text-sm text-[var(--color-text-primary)] font-medium">{paymentScreenshot.name}</p>
+                              <p className="text-xs text-[var(--color-text-secondary)]">Click to change</p>
+                            </div>
+                          ) : (
+                            <div className="text-center">
+                              <Upload className="w-8 h-8 text-[var(--color-text-secondary)] mx-auto mb-2" />
+                              <p className="text-sm text-[var(--color-text-secondary)]">Click or drag to upload</p>
+                            </div>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => setPaymentScreenshot(e.target.files?.[0] || null)}
+                          />
+                        </label>
                       </div>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => setPaymentScreenshot(e.target.files?.[0] || null)}
-                    />
-                  </label>
-                </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="cash"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="bg-[var(--color-surface)] rounded-xl p-8 mb-6 border border-[var(--color-border)] text-center"
+                    >
+                      <div className="w-16 h-16 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center mx-auto mb-4 text-[var(--color-primary)]">
+                        <DollarSign className="w-8 h-8" />
+                      </div>
+                      <p className="font-bold text-[var(--color-text-primary)] mb-2">Cash Payment Policy</p>
+                      <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                        Please pay the consultation fee of <strong>Rs. 1,500</strong> at the clinic reception upon arrival. No upfront payment is required.
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <div className="flex justify-between">
                   <Button variant="ghost" onClick={goBack}><ChevronLeft className="w-4 h-4 mr-1" /> Back</Button>
@@ -477,9 +582,23 @@ export function AppointmentsSection() {
                 <p className="text-sm text-[var(--color-text-secondary)] mb-6">
                   <strong>Reference:</strong> {reference}
                 </p>
-                <p className="text-sm text-[var(--color-primary)] font-medium bg-[var(--color-primary)]/10 inline-block px-4 py-2 rounded-full">
+                <p className="text-sm text-[var(--color-primary)] font-medium bg-[var(--color-primary)]/10 inline-block px-4 py-2 rounded-full mb-8">
                   We&apos;ll confirm your appointment via WhatsApp / SMS
                 </p>
+
+                <div className="flex flex-col items-center gap-4">
+                  <Button onClick={resetForm} variant="outline" className="w-full sm:w-auto">
+                    Book Another Appointment
+                  </Button>
+                  
+                  {resetTimer !== null && (
+                    <p className="text-xs text-[var(--color-text-secondary)]">
+                      Form will reset automatically in {resetTimer} seconds...
+                    </p>
+                  )}
+                </div>
+
+                <Timer setResetTimer={setResetTimer} resetForm={resetForm} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -487,4 +606,28 @@ export function AppointmentsSection() {
       </div>
     </section>
   );
+}
+
+function Timer({ setResetTimer, resetForm }: { setResetTimer: (t: number | null) => void, resetForm: () => void }) {
+  React.useEffect(() => {
+    let timeLeft = 30;
+    setResetTimer(timeLeft);
+
+    const interval = setInterval(() => {
+      timeLeft -= 1;
+      if (timeLeft <= 0) {
+        clearInterval(interval);
+        resetForm();
+      } else {
+        setResetTimer(timeLeft);
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+      setResetTimer(null);
+    };
+  }, [setResetTimer, resetForm]);
+
+  return null;
 }

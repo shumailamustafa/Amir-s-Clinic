@@ -14,10 +14,13 @@ export default function AppointmentsPage() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = subscribeToAppointments((data) => {
+    const unsubscribe = subscribeToAppointments((data, error) => {
+      if (error) {
+        console.error('AppointmentsPage sub error:', error);
+        return;
+      }
       setAppointments(data);
       if (selectedAppt) {
-        // Update selected appt if it changes in the background
         const updatedSelected = data.find(a => a.id === selectedAppt.id);
         if (updatedSelected) setSelectedAppt(updatedSelected);
       }
@@ -41,14 +44,11 @@ export default function AppointmentsPage() {
 
   const handleUpdateStatus = async (id: string, status: 'confirmed' | 'cancelled') => {
     setIsUpdating(true);
-    try {
-      await updateAppointmentStatus(id, status);
-    } catch (error) {
-      console.error('Failed to update status', error);
-      alert('Failed to update status');
-    } finally {
-      setIsUpdating(false);
+    const { error } = await updateAppointmentStatus(id, status);
+    if (error) {
+      alert(`Failed to update status: ${error}`);
     }
+    setIsUpdating(false);
   };
 
 

@@ -21,8 +21,10 @@ export default function AboutPage() {
 
   useEffect(() => {
     async function load() {
-      const data = await getDoctorProfile();
-      if (data) {
+      const { data, error } = await getDoctorProfile();
+      if (error) {
+        console.error('Failed to load profile:', error);
+      } else if (data) {
         setName(data.name || '');
         setTitle(data.title || '');
         setBio(data.bio || '');
@@ -38,17 +40,16 @@ export default function AboutPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    try {
-      await updateDoctorProfile({
-        name, title, bio, education, experience, skills, achievements
-      });
+    const { error } = await updateDoctorProfile({
+      name, title, bio, education, experience, skills, achievements
+    });
+
+    if (error) {
+      alert(`Failed to save profile: ${error}`);
+    } else {
       alert('Profile saved successfully!');
-    } catch (e) {
-      console.error('Failed to save profile', e);
-      alert('Failed to save profile');
-    } finally {
-      setSaving(false);
     }
+    setSaving(false);
   };
 
   const updateItem = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, index: number, field: keyof T, value: any) => {

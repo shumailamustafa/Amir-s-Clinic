@@ -9,14 +9,26 @@ import { FloatingTeeth } from '../ui/FloatingTeeth';
 
 import { useClinicStatus } from '../../hooks/useClinicStatus';
 import { isClinicOpen } from '@dental/utils';
+import { useEffect } from 'react';
 
 export function HomeSection() {
   const { config, loading } = useClinicStatus();
 
+  // Auto-seed if config is missing
+  useEffect(() => {
+    if (!loading && !config) {
+      console.log('Clinic config missing, attempting to seed...');
+      // Dynamic import to avoid circular dependencies or heavy initial load
+      import('@dental/firebase').then(({ seedClinicConfig }) => {
+        seedClinicConfig().catch(err => console.error('Failed to seed:', err));
+      }).catch(err => console.error('Failed to load firebase module:', err));
+    }
+  }, [loading, config]);
+
   // Determine status from real-time config
   const clinicStatus = config 
-    ? isClinicOpen(config.openHours, config.holidayDates, config.holidayMode)
-    : { isOpen: true, statusText: 'Loading clinic status...' };
+    ? isClinicOpen(config.openHours, config.holidayDates, config.holidayMode, config.emergencyMessage)
+    : { isOpen: false, statusText: 'Status unavailable' };
 
   const scrollToAppointments = () => {
     const el = document.getElementById('appointments');
@@ -48,6 +60,7 @@ export function HomeSection() {
           <OpenClosedBadge
             isOpen={clinicStatus.isOpen}
             statusText={clinicStatus.statusText}
+            loading={loading}
           />
         </motion.div>
 

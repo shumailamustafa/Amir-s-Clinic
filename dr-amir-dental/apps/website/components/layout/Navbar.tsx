@@ -33,19 +33,27 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu on route change / scroll
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [activeSection]);
-
   const scrollToSection = (id: SectionId) => {
-    const element = document.getElementById(id);
-    if (element) {
-      const offset = 80; // navbar height
-      const top = element.getBoundingClientRect().top + window.scrollY - offset;
-      window.scrollTo({ top, behavior: 'smooth' });
+    // If mobile menu is open, handle closing and scrolling differently
+    if (isMobileMenuOpen) {
+      // Small delay to allow menu closing animation to start/finish
+      // or at least not block the scroll compute
+      setIsMobileMenuOpen(false);
+      
+      setTimeout(() => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 300); // Wait for menu close animation roughly
+    } else {
+      const element = document.getElementById(id);
+      if (element) {
+        const offset = 80; // navbar height
+        const top = element.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
     }
-    setIsMobileMenuOpen(false);
   };
 
   return (

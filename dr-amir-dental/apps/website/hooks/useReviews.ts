@@ -10,18 +10,17 @@ export function useReviews(approvedOnly = true) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    try {
-      const unsubscribe = subscribeToReviews((data) => {
+    const unsubscribe = subscribeToReviews((data, subError) => {
+      if (subError) {
+        setError(new Error(subError));
+      } else {
         setReviews(data);
-        setLoading(false);
-      }, approvedOnly ? 'approved' : undefined);
-
-      return () => unsubscribe();
-    } catch (err) {
-      console.error('Error subscribing to reviews:', err);
-      setError(err instanceof Error ? err : new Error('Failed to subscribe to reviews'));
+        setError(null);
+      }
       setLoading(false);
-    }
+    }, approvedOnly ? 'approved' : undefined);
+
+    return () => unsubscribe();
   }, [approvedOnly]);
 
   return { reviews, loading, error };

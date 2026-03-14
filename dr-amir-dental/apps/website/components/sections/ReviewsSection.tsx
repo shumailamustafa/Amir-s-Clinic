@@ -2,23 +2,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, MessageSquarePlus, Send, ChevronLeft, ChevronRight, User } from 'lucide-react';
+import { Star, MessageSquarePlus, Send, ChevronLeft, ChevronRight, User, Phone } from 'lucide-react';
 import { Button, Input } from '@dental/ui';
 import { FloatingTeeth } from '../ui/FloatingTeeth';
 import { StarRating } from '../ui/StarRating';
 import { useReviews } from '../../hooks/useReviews';
 
-// Placeholder reviews — will come from Firestore
-const reviewsData = [
-  { id: '1', name: 'Ahmed Khan', rating: 5, text: 'Excellent experience! Dr. Amir is extremely professional. My dental implant procedure was painless and the results are amazing. Highly recommended!', date: '2024-02-15', avatarLetter: 'A' },
-  { id: '2', name: 'Fatima Ali', rating: 5, text: 'Best dentist in Lahore. The clinic is very clean and modern. My teeth whitening turned out beautifully!', date: '2024-02-10', avatarLetter: 'F' },
-  { id: '3', name: 'Muhammad Usman', rating: 4, text: 'Very professional service. The root canal treatment was smooth and painless. Thank you Dr. Amir!', date: '2024-01-28', avatarLetter: 'M' },
-  { id: '4', name: 'Ayesha Siddiqui', rating: 5, text: 'Amazing experience with orthodontics. The entire team is very friendly and caring. Will definitely come back.', date: '2024-01-20', avatarLetter: 'A' },
-  { id: '5', name: 'Bilal Hassan', rating: 5, text: 'Had scaling done here. Quick, professional, and affordable. The clinic has top-notch equipment.', date: '2024-01-15', avatarLetter: 'B' },
-  { id: '6', name: 'Sana Malik', rating: 4, text: 'My crown looks completely natural. Dr. Amir really takes the time to ensure everything is perfect.', date: '2024-01-10', avatarLetter: 'S' },
-];
-
-const statsData = { totalReviews: 180, averageRating: 4.8, fiveStarCount: 156 };
+// Hardcoded stats defaults — will be recalculated from real data
+const statsDataDefaults = { totalReviews: 0, averageRating: 0, fiveStarCount: 0 };
 
 function AnimatedCounter({ target, duration = 2000 }: { target: number; duration?: number }) {
   const [count, setCount] = useState(0);
@@ -58,30 +49,69 @@ export function ReviewsSection() {
   const [reviewerName, setReviewerName] = useState('');
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
+  const [patientPhone, setPatientPhone] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [scrollIndex, setScrollIndex] = useState(0);
   
-  const { reviews } = useReviews(true);
+  const { reviews, loading } = useReviews(true);
 
-  const displayReviews = reviews.length > 0 
-    ? reviews.map(r => ({
-        id: r.id,
-        name: r.patientName,
-        rating: r.rating,
-        text: r.reviewText,
-        date: r.createdAt,
-        avatarLetter: r.patientName.charAt(0).toUpperCase()
-      }))
-    : reviewsData;
+  // Recalculate stats based on real reviews
+  const statsData = React.useMemo(() => {
+    if (reviews.length === 0) return statsDataDefaults;
+    const total = reviews.length;
+    const avg = reviews.reduce((acc, r) => acc + r.rating, 0) / total;
+    const fiveStars = reviews.filter(r => r.rating === 5).length;
+    return {
+      totalReviews: total,
+      averageRating: Math.round(avg * 10) / 10,
+      fiveStarCount: fiveStars
+    };
+  }, [reviews]);
+
+  const displayReviews = reviews.map(r => ({
+    id: r.id,
+    name: r.patientName,
+    rating: r.rating,
+    text: r.reviewText,
+    date: r.createdAt,
+    avatarLetter: r.patientName.charAt(0).toUpperCase()
+  }));
 
 const visibleCount = 3;
   const maxIndex = Math.max(0, displayReviews.length - visibleCount);
 
-  const handleSubmitReview = () => {
-    // Will integrate with Firebase later
-    setShowForm(false);
-    setReviewerName('');
-    setReviewRating(0);
-    setReviewText('');
+  const handleSubmitReview = async () => {
+    if (!reviewerName || !reviewRating || !reviewText) return;
+    
+    setIsSubmitting(true);
+    try {
+      const { createReview } = await import('@dental/firebase');
+      const { error } = await createReview({
+        patientName: reviewerName,
+        phone: patientPhone,
+        rating: reviewRating,
+        reviewText,
+        referenceNumber: `REV-${Date.now().toString(36).toUpperCase()}`,
+        status: 'pending',
+        adminReply: '',
+        createdAt: new Date().toISOString(),
+      });
+
+      if (error) {
+        alert(`Failed to submit review: ${error}`);
+      } else {
+        alert('Thank you! Your review has been submitted for approval.');
+        setShowForm(false);
+        setReviewerName('');
+        setPatientPhone('');
+        setReviewRating(0);
+        setReviewText('');
+      }
+    } catch (err) {
+      console.error('Error submitting review:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -119,7 +149,7 @@ const visibleCount = 3;
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-[var(--color-star-gold)]">
-              <AnimatedCounter target={48} /><span className="text-lg">/50</span>
+              {statsData.averageRating}<span className="text-lg">/5</span>
             </div>
             <p className="text-sm text-[var(--color-text-secondary)]">Avg Rating</p>
           </div>
@@ -131,63 +161,86 @@ const visibleCount = 3;
           </div>
         </motion.div>
 
-        {/* Reviews Carousel */}
-        <div className="relative mb-12">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setScrollIndex(Math.max(0, scrollIndex - 1))}
-              disabled={scrollIndex === 0}
-              className="shrink-0 p-2 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] hover:bg-[var(--color-primary)]/10 disabled:opacity-30 transition-colors cursor-pointer"
-            >
-              <ChevronLeft className="w-5 h-5 text-[var(--color-text-primary)]" />
-            </button>
-
-            <div className="flex-1 overflow-hidden">
-              <motion.div
-                className="flex gap-6"
-                animate={{ x: `-${scrollIndex * (100 / visibleCount + 2)}%` }}
-                transition={{ type: 'spring', stiffness: 200, damping: 30 }}
-              >
-                {displayReviews.map((review, index) => (
-                  <motion.div
-                    key={review.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 }}
-                    className="shrink-0 w-full md:w-[calc(33.333%-1rem)] bg-[var(--color-bg)] rounded-2xl p-6 border border-[var(--color-border)] shadow-[var(--shadow-card)]"
-                  >
-                    {/* Reviewer */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] font-bold text-sm">
-                        {review.avatarLetter}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-[var(--color-text-primary)] text-sm">{review.name}</p>
-                        <p className="text-xs text-[var(--color-text-secondary)]">{new Date(review.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                      </div>
+        <div className="relative mb-12 min-h-[220px]">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-[var(--color-bg)] rounded-2xl p-6 border border-[var(--color-border)] animate-pulse">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-[var(--color-surface)]" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-24 bg-[var(--color-surface)] rounded" />
+                      <div className="h-3 w-16 bg-[var(--color-surface)] rounded" />
                     </div>
-
-                    {/* Stars */}
-                    <StarRating rating={review.rating} size="sm" />
-
-                    {/* Text */}
-                    <p className="mt-3 text-sm text-[var(--color-text-secondary)] leading-relaxed line-clamp-4">
-                      {review.text}
-                    </p>
-                  </motion.div>
-                ))}
-              </motion.div>
+                  </div>
+                  <div className="h-4 w-full bg-[var(--color-surface)] rounded mb-2" />
+                  <div className="h-4 w-2/3 bg-[var(--color-surface)] rounded" />
+                </div>
+              ))}
             </div>
+          ) : displayReviews.length > 0 ? (
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setScrollIndex(Math.max(0, scrollIndex - 1))}
+                disabled={scrollIndex === 0}
+                className="shrink-0 p-2 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] hover:bg-[var(--color-primary)]/10 disabled:opacity-30 transition-colors cursor-pointer"
+              >
+                <ChevronLeft className="w-5 h-5 text-[var(--color-text-primary)]" />
+              </button>
 
-            <button
-              onClick={() => setScrollIndex(Math.min(maxIndex, scrollIndex + 1))}
-              disabled={scrollIndex >= maxIndex}
-              className="shrink-0 p-2 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] hover:bg-[var(--color-primary)]/10 disabled:opacity-30 transition-colors cursor-pointer"
-            >
-              <ChevronRight className="w-5 h-5 text-[var(--color-text-primary)]" />
-            </button>
-          </div>
+              <div className="flex-1 overflow-hidden">
+                <motion.div
+                  className="flex gap-6"
+                  animate={{ x: `-${scrollIndex * (100 / visibleCount + 2)}%` }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 30 }}
+                >
+                  {displayReviews.map((review, index) => (
+                    <motion.div
+                      key={review.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: index * 0.1 }}
+                      className="shrink-0 w-full md:w-[calc(33.333%-1rem)] bg-[var(--color-bg)] rounded-2xl p-6 border border-[var(--color-border)] shadow-[var(--shadow-card)]"
+                    >
+                      {/* Reviewer */}
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] font-bold text-sm">
+                          {review.avatarLetter}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-[var(--color-text-primary)] text-sm">{review.name}</p>
+                          <p className="text-xs text-[var(--color-text-secondary)]">{new Date(review.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                        </div>
+                      </div>
+
+                      {/* Stars */}
+                      <StarRating rating={review.rating} size="sm" />
+
+                      {/* Text */}
+                      <p className="mt-3 text-sm text-[var(--color-text-secondary)] leading-relaxed line-clamp-4">
+                        {review.text}
+                      </p>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </div>
+
+              <button
+                onClick={() => setScrollIndex(Math.min(maxIndex, scrollIndex + 1))}
+                disabled={scrollIndex >= maxIndex}
+                className="shrink-0 p-2 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] hover:bg-[var(--color-primary)]/10 disabled:opacity-30 transition-colors cursor-pointer"
+              >
+                <ChevronRight className="w-5 h-5 text-[var(--color-text-primary)]" />
+              </button>
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-[var(--color-bg)] rounded-3xl border border-dashed border-[var(--color-border)]">
+              <Star className="w-12 h-12 text-[var(--color-text-secondary)]/20 mx-auto mb-4" />
+              <p className="text-[var(--color-text-secondary)]">No approved reviews yet.</p>
+              <p className="text-sm text-[var(--color-text-secondary)]/60">Be the first to share your experience!</p>
+            </div>
+          )}
         </div>
 
         {/* Write Review Button + Form */}
@@ -212,11 +265,19 @@ const visibleCount = 3;
 
                 <div className="space-y-4">
                   <Input
-                    label="Your Name"
+                    label="Full Name"
                     placeholder="Enter your name"
                     value={reviewerName}
                     onChange={(e) => setReviewerName(e.target.value)}
                     icon={<User className="w-4 h-4" />}
+                  />
+
+                  <Input
+                    label="Phone Number"
+                    placeholder="0300-1234567"
+                    value={patientPhone}
+                    onChange={(e) => setPatientPhone(e.target.value)}
+                    icon={<Phone className="w-4 h-4" />}
                   />
 
                   <div>
@@ -238,9 +299,10 @@ const visibleCount = 3;
 
                 <div className="flex gap-3 mt-4">
                   <Button variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
-                  <Button
+                   <Button
                     onClick={handleSubmitReview}
-                    disabled={!reviewerName || !reviewRating || !reviewText}
+                    disabled={!reviewerName || !patientPhone || !reviewRating || !reviewText || isSubmitting}
+                    isLoading={isSubmitting}
                   >
                     <Send className="w-4 h-4 mr-2" /> Submit Review
                   </Button>

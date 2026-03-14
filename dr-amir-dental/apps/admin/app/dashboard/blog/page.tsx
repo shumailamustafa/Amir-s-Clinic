@@ -29,7 +29,13 @@ export default function BlogPage() {
   const [previewUrl, setPreviewUrl] = useState<string>('');
 
   useEffect(() => {
-    const unsub = subscribeToBlogPosts((data) => setPosts(data));
+    const unsub = subscribeToBlogPosts((data, error) => {
+      if (error) {
+        console.error('BlogPage sub error:', error);
+        return;
+      }
+      setPosts(data);
+    });
     return unsub;
   }, []);
 
@@ -55,48 +61,58 @@ export default function BlogPage() {
 
   const handleDelete = async (id: string, title: string) => {
     if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
-      await deleteBlogPost(id);
+      const { error } = await deleteBlogPost(id);
+      if (error) {
+        alert(`Failed to delete post: ${error}`);
+      }
     }
   };
 
   const handleSave = async (status: 'published' | 'draft') => {
     setIsSaving(true);
-    try {
-      let imageUrl = previewUrl;
-      if (imageFile) {
-        imageUrl = await uploadToCloudinary(imageFile, 'dr-amir-blog');
+    let imageUrl = previewUrl;
+    
+    if (imageFile) {
+      const { data, error: uploadError } = await uploadToCloudinary(imageFile, 'dr-amir-blog');
+      if (uploadError) {
+        alert(`Failed to upload image: ${uploadError}`);
+        setIsSaving(false);
+        return;
       }
-
-      const postData: Partial<BlogPost> = {
-        title,
-        slug: slugify(title),
-        category,
-        content,
-        status,
-        featuredImageUrl: imageUrl,
-        excerpt: content.substring(0, 150) + '...',
-        seoTitle: title,
-        seoDescription: content.substring(0, 150),
-        tags: [category].filter(Boolean)
-      };
-
-      if (editingPost) {
-        await updateBlogPost(editingPost.id, postData);
-      } else {
-        await createBlogPost({
-          ...postData,
-          createdAt: new Date().toISOString(),
-          publishedAt: status === 'published' ? new Date().toISOString() : '',
-          scheduledAt: '',
-        } as Omit<BlogPost, 'id'>);
-      }
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Failed to save post', error);
-      alert('Failed to save post');
-    } finally {
-      setIsSaving(false);
+      imageUrl = data || '';
     }
+
+    const postData: Partial<BlogPost> = {
+      title,
+      slug: slugify(title),
+      category,
+      content,
+      status,
+      featuredImageUrl: imageUrl,
+      excerpt: content.substring(0, 150) + '...',
+      seoTitle: title,
+      seoDescription: content.substring(0, 150),
+      tags: [category].filter(Boolean)
+    };
+
+    let result;
+    if (editingPost) {
+      result = await updateBlogPost(editingPost.id, postData);
+    } else {
+      result = await createBlogPost({
+        ...postData,
+        createdAt: new Date().toISOString(),
+        publishedAt: status === 'published' ? new Date().toISOString() : '',
+        scheduledAt: '',
+      } as Omit<BlogPost, 'id'>);
+    }
+
+    if (result.error) {
+      alert(`Failed to save post: ${result.error}`);
+    } else {
+      setIsModalOpen(false);
+    }
+    setIsSaving(false);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,7 +204,7 @@ export default function BlogPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5 flex justify-between">
+            <label className="text-sm font-medium text-[var(--color-text-primary)] mb-1.5 flex justify-between">
               Content
               <span className="text-[var(--color-primary)] text-xs flex items-center gap-1">
                 TipTap Editor Placeholder <Edit2 className="w-3 h-3"/>

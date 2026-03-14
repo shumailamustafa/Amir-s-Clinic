@@ -10,18 +10,17 @@ export function useDoctorProfile() {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    try {
-      const unsubscribe = subscribeToDoctorProfile((data) => {
+    const unsubscribe = subscribeToDoctorProfile((data, subError) => {
+      if (subError) {
+        setError(new Error(subError));
+      } else {
         setProfile(data);
-        setLoading(false);
-      });
-
-      return () => unsubscribe();
-    } catch (err) {
-      console.error('Error subscribing to doctor profile:', err);
-      setError(err instanceof Error ? err : new Error('Failed to subscribe'));
+        setError(null);
+      }
       setLoading(false);
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   return { profile, loading, error };

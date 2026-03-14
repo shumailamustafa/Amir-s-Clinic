@@ -12,7 +12,13 @@ export default function SettingsPage() {
   const [config, setConfig] = useState<ClinicConfig | null>(null);
 
   useEffect(() => {
-    const unsub = subscribeToClinicConfig((data) => setConfig(data));
+    const unsub = subscribeToClinicConfig((data, error) => {
+      if (error) {
+        console.error('SettingsPage sub error:', error);
+        return;
+      }
+      setConfig(data);
+    });
     return unsub;
   }, []);
 

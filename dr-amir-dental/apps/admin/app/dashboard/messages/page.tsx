@@ -13,7 +13,11 @@ export default function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    const unsub = subscribeToMessages((data) => {
+    const unsub = subscribeToMessages((data, error) => {
+      if (error) {
+        console.error('MessagesPage sub error:', error);
+        return;
+      }
       setMessages(data);
       if (!selectedMsg && data.length > 0) {
         setSelectedMsg(data[0]);
@@ -23,13 +27,11 @@ export default function MessagesPage() {
   }, []);
 
   const handleUpdateStatus = async (id: string, status: 'replied' | 'read') => {
-    try {
-      await updateMessageStatus(id, status);
-      if (selectedMsg?.id === id) {
-         setSelectedMsg({ ...selectedMsg, status });
-      }
-    } catch (e) {
-      console.error('Failed to update message status', e);
+    const { error } = await updateMessageStatus(id, status);
+    if (error) {
+      alert(`Failed to update status: ${error}`);
+    } else if (selectedMsg?.id === id) {
+       setSelectedMsg({ ...selectedMsg, status });
     }
   };
 

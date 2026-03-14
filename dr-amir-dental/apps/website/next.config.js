@@ -15,6 +15,23 @@ const nextConfig = {
       },
     ],
   },
+  experimental: {
+    serverComponentsExternalPackages: ['pino', 'pino-pretty'],
+  },
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
+  },
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.infrastructureLogging = {
+        level: 'error',
+        debug: /PackFileCache/,
+      };
+    }
+    return config;
+  },
 };
 
 module.exports = nextConfig;

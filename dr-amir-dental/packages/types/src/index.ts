@@ -74,6 +74,7 @@ export interface ClinicConfig {
   openHours: OpenHours;
   holidayDates: string[];
   holidayMode: boolean;
+  emergencyMessage?: string;
 }
 
 // ---------- Service ----------

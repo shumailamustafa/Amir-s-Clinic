@@ -20,27 +20,26 @@ export function ContactSection() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    try {
-      await createMessage({
-        name,
-        email,
-        phone,
-        message,
-        status: 'unread',
-        createdAt: new Date().toISOString(),
-      });
+    const { error } = await createMessage({
+      name,
+      email,
+      phone,
+      message,
+      status: 'unread',
+      createdAt: new Date().toISOString(),
+    });
+
+    if (error) {
+       alert(`Failed to send message: ${error}`);
+    } else {
       setSubmitted(true);
       setName('');
       setEmail('');
       setPhone('');
       setMessage('');
       setTimeout(() => setSubmitted(false), 5000);
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      alert('Failed to send message. Please try again.');
-    } finally {
-      setSubmitting(false);
     }
+    setSubmitting(false);
   };
 
   const clinicPhone = config?.phone || '0300-1234567';

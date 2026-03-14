@@ -5,86 +5,98 @@ import {
   addDoc,
   updateDoc,
   query,
-  where,
   orderBy,
   type Unsubscribe,
   onSnapshot,
 } from 'firebase/firestore';
 import { getDb } from '../config';
 import type { Review, ReviewStatus } from '@dental/types';
+import { createLogger, formatError } from '@dental/utils';
+import { firebaseOperation, type FirebaseResult } from '../errorHandler';
 
 const COLLECTION = 'reviews';
+const CONTEXT = 'firebase:reviews';
 
-export async function createReview(data: Omit<Review, 'id'>): Promise<string> {
-  const ref = await addDoc(collection(getDb(), COLLECTION), data);
-  return ref.id;
+export async function createReview(data: Omit<Review, 'id'>): Promise<FirebaseResult<string>> {
+  return firebaseOperation('createReview', CONTEXT, async () => {
+    const ref = await addDoc(collection(getDb(), COLLECTION), data);
+    return ref.id;
+  });
 }
 
 export async function getReviewsByStatus(
   status: ReviewStatus
-): Promise<Review[]> {
-  const q = query(
-    collection(getDb(), COLLECTION),
-    where('status', '==', status),
-    orderBy('createdAt', 'desc')
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Review);
+): Promise<FirebaseResult<Review[]>> {
+  return firebaseOperation('getReviewsByStatus', CONTEXT, async () => {
+    // To avoid missing index errors, we query all reviews ordered by createdAt
+    // and filter by status in memory.
+    const q = query(
+      collection(getDb(), COLLECTION),
+      orderBy('createdAt', 'desc')
+    );
+    const snap = await getDocs(q);
+    return snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }) as Review)
+      .filter(r => r.status === status);
+  });
 }
 
-export async function getAllReviews(): Promise<Review[]> {
-  const q = query(
-    collection(getDb(), COLLECTION),
-    orderBy('createdAt', 'desc')
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Review);
+export async function getAllReviews(): Promise<FirebaseResult<Review[]>> {
+  return firebaseOperation('getAllReviews', CONTEXT, async () => {
+    const q = query(
+      collection(getDb(), COLLECTION),
+      orderBy('createdAt', 'desc')
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Review);
+  });
 }
 
 export async function updateReviewStatus(
   id: string,
   status: ReviewStatus
-): Promise<void> {
-  const ref = doc(getDb(), COLLECTION, id);
-  await updateDoc(ref, { status });
+): Promise<FirebaseResult<void>> {
+  return firebaseOperation('updateReviewStatus', CONTEXT, async () => {
+    const ref = doc(getDb(), COLLECTION, id);
+    await updateDoc(ref, { status });
+  });
 }
 
 export async function addAdminReply(
   id: string,
   adminReply: string
-): Promise<void> {
-  const ref = doc(getDb(), COLLECTION, id);
-  await updateDoc(ref, { adminReply });
+): Promise<FirebaseResult<void>> {
+  return firebaseOperation('addAdminReply', CONTEXT, async () => {
+    const ref = doc(getDb(), COLLECTION, id);
+    await updateDoc(ref, { adminReply });
+  });
 }
 
 export function subscribeToReviews(
-  callback: (reviews: Review[]) => void,
+  callback: (reviews: Review[], error?: string) => void,
   status?: ReviewStatus
 ): Unsubscribe {
-  try {
-    let q = query(
-      collection(getDb(), COLLECTION),
-      orderBy('createdAt', 'desc')
+  const logger = createLogger(CONTEXT);
+  
+  // To avoid missing index errors, we subscribe to all reviews ordered by createdAt
+  // and filter by status in memory if needed.
+  const q = query(
+    collection(getDb(), COLLECTION),
+    orderBy('createdAt', 'desc')
+  );
+
+  return onSnapshot(q, (snap) => {
+    let reviews = snap.docs.map(
+      (d) => ({ id: d.id, ...d.data() }) as Review
     );
+
     if (status) {
-      q = query(
-        collection(getDb(), COLLECTION),
-        where('status', '==', status),
-        orderBy('createdAt', 'desc')
-      );
+      reviews = reviews.filter(r => r.status === status);
     }
-    return onSnapshot(q, (snap) => {
-      const reviews = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as Review
-      );
-      callback(reviews);
-    }, (error) => {
-      console.error('[reviews] Snapshot error:', error);
-      callback([]);
-    });
-  } catch (error) {
-    console.error('[reviews] Failed to subscribe:', error);
-    callback([]);
-    return () => {};
-  }
+
+    callback(reviews);
+  }, (error) => {
+    logger.error({ error: formatError(error) }, 'Reviews subscription error');
+    callback([], 'Failed to sync reviews');
+  });
 }

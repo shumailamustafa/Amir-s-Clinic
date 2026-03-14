@@ -33,7 +33,13 @@ export default function ServicesPage() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsub = subscribeToServices((data) => setServices(data));
+    const unsub = subscribeToServices((data, error) => {
+      if (error) {
+        console.error('ServicesPage sub error:', error);
+        return;
+      }
+      setServices(data);
+    });
     return unsub;
   }, []);
 
@@ -65,40 +71,49 @@ export default function ServicesPage() {
 
   const handleDelete = async (id: string, name: string) => {
     if (window.confirm(`Are you sure you want to delete ${name}?`)) {
-      await deleteService(id);
+      const { error } = await deleteService(id);
+      if (error) {
+        alert(`Failed to delete service: ${error}`);
+      }
     }
   };
 
   const handleSave = async () => {
     setIsSaving(true);
-    try {
-      let imageUrl = previewUrl; // Use existing if no file uploaded
-      
-      if (imageFile) {
-        imageUrl = await uploadToCloudinary(imageFile, 'dr-amir-services');
+    let imageUrl = previewUrl; // Use existing if no file uploaded
+    
+    if (imageFile) {
+      const { data, error: uploadError } = await uploadToCloudinary(imageFile, 'dr-amir-services');
+      if (uploadError) {
+        alert(`Failed to upload image: ${uploadError}`);
+        setIsSaving(false);
+        return;
       }
-
-      if (editingService) {
-        await updateService(editingService.id, {
-          name, description, priceMin, priceMax, estimatedTime: duration, isVisible, imageUrl
-        });
-      } else {
-        await createService({
-          name, description, priceMin, priceMax, estimatedTime: duration, isVisible,
-          procedureSteps: [],
-          imageUrl,
-          beforeAfterImages: [],
-          order: services.length,
-          createdAt: new Date().toISOString()
-        } as Omit<Service, 'id'>);
-      }
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Failed to save service', error);
-      alert('Failed to save service');
-    } finally {
-      setIsSaving(false);
+      imageUrl = data || '';
     }
+
+    let result;
+    if (editingService) {
+      result = await updateService(editingService.id, {
+        name, description, priceMin, priceMax, estimatedTime: duration, isVisible, imageUrl
+      });
+    } else {
+      result = await createService({
+        name, description, priceMin, priceMax, estimatedTime: duration, isVisible,
+        procedureSteps: [],
+        imageUrl,
+        beforeAfterImages: [],
+        order: services.length,
+        createdAt: new Date().toISOString()
+      } as Omit<Service, 'id'>);
+    }
+
+    if (result.error) {
+      alert(`Failed to save service: ${result.error}`);
+    } else {
+      setIsModalOpen(false);
+    }
+    setIsSaving(false);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,7 +156,11 @@ export default function ServicesPage() {
 
     // Persist to firestore
     const orderedIds = list.map(s => s.id);
-    await reorderServices(orderedIds);
+    const { error } = await reorderServices(orderedIds);
+    if (error) {
+      alert(`Failed to save new order: ${error}`);
+      // Ideally revert state here, but for brevity keep it
+    }
   };
 
   return (

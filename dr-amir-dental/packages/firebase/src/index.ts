@@ -8,3 +8,5 @@ export * from './collections/reviews';
 export * from './collections/blogPosts';
 export * from './collections/messages';
 export * from './collections/doctorProfile';
+export * from './collections/seed';
+export * from './errorHandler';

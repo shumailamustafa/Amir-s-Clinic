@@ -13,7 +13,13 @@ export default function ReviewsPage() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    const unsub = subscribeToReviews((data) => setReviews(data));
+    const unsub = subscribeToReviews((data, error) => {
+      if (error) {
+        console.error('ReviewsPage sub error:', error);
+        return;
+      }
+      setReviews(data);
+    });
     return unsub;
   }, []);
 
@@ -21,28 +27,23 @@ export default function ReviewsPage() {
 
   const handleUpdateStatus = async (id: string, status: 'approved' | 'rejected') => {
     setIsUpdating(true);
-    try {
-      await updateReviewStatus(id, status);
-    } catch (error) {
-      console.error('Failed to update review status', error);
-      alert('Failed to update status');
-    } finally {
-      setIsUpdating(false);
+    const { error } = await updateReviewStatus(id, status);
+    if (error) {
+      alert(`Failed to update status: ${error}`);
     }
+    setIsUpdating(false);
   };
 
   const handleReply = async (id: string) => {
     if (!replyText[id]?.trim()) return;
     setIsUpdating(true);
-    try {
-      await addAdminReply(id, replyText[id]);
+    const { error } = await addAdminReply(id, replyText[id]);
+    if (error) {
+      alert(`Failed to add reply: ${error}`);
+    } else {
       setReplyText(prev => ({ ...prev, [id]: '' }));
-    } catch (error) {
-      console.error('Failed to add reply', error);
-      alert('Failed to add reply');
-    } finally {
-      setIsUpdating(false);
     }
+    setIsUpdating(false);
   };
 
   return (

@@ -3,26 +3,32 @@
 import { useState, useEffect } from 'react';
 import { subscribeToServices } from '@dental/firebase';
 import type { Service } from '@dental/types';
+import { useDevErrorStore } from '../stores/devErrorStore';
+import { toast } from 'sonner';
 
 export function useServices(visibleOnly = true) {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const addError = useDevErrorStore((s) => s.addError);
 
   useEffect(() => {
-    try {
-      const unsubscribe = subscribeToServices((data) => {
+    const unsubscribe = subscribeToServices((data, subError) => {
+      if (subError) {
+        setError(subError);
+        addError({
+          message: subError,
+          source: 'Firebase',
+        });
+      } else {
         setServices(data);
-        setLoading(false);
-      }, visibleOnly);
-
-      return () => unsubscribe();
-    } catch (err) {
-      console.error('Error subscribing to services:', err);
-      setError(err instanceof Error ? err : new Error('Failed to subscribe to services'));
+        setError(null);
+      }
       setLoading(false);
-    }
-  }, [visibleOnly]);
+    }, visibleOnly);
+
+    return () => unsubscribe();
+  }, [visibleOnly, addError]);
 
   return { services, loading, error };
 }

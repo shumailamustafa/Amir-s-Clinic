@@ -12,92 +12,109 @@ import {
 } from 'firebase/firestore';
 import { getDb } from '../config';
 import type { Appointment, AppointmentStatus, PaymentStatus } from '@dental/types';
+import { createLogger, formatError } from '@dental/utils';
+import { firebaseOperation, type FirebaseResult } from '../errorHandler';
 
 const COLLECTION = 'appointments';
+const CONTEXT = 'firebase:appointments';
 
 export async function createAppointment(
   data: Omit<Appointment, 'id'>
-): Promise<string> {
-  const ref = await addDoc(collection(getDb(), COLLECTION), data);
-  return ref.id;
+): Promise<FirebaseResult<string>> {
+  return firebaseOperation('createAppointment', CONTEXT, async () => {
+    const ref = await addDoc(collection(getDb(), COLLECTION), data);
+    return ref.id;
+  });
 }
 
 export async function getAppointmentsByDate(
   date: string
-): Promise<Appointment[]> {
-  const q = query(
-    collection(getDb(), COLLECTION),
-    where('date', '==', date),
-    orderBy('timeSlot', 'asc')
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Appointment);
+): Promise<FirebaseResult<Appointment[]>> {
+  return firebaseOperation('getAppointmentsByDate', CONTEXT, async () => {
+    // To avoid missing index errors, we query all appointments for the date
+    // and sort by timeSlot in memory.
+    const q = query(
+      collection(getDb(), COLLECTION),
+      where('date', '==', date)
+    );
+    const snap = await getDocs(q);
+    const appointments = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Appointment);
+    return appointments.sort((a, b) => a.timeSlot.localeCompare(b.timeSlot));
+  });
 }
 
 export async function getAppointmentsByStatus(
   status: AppointmentStatus
-): Promise<Appointment[]> {
-  const q = query(
-    collection(getDb(), COLLECTION),
-    where('status', '==', status),
-    orderBy('createdAt', 'desc')
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Appointment);
+): Promise<FirebaseResult<Appointment[]>> {
+  return firebaseOperation('getAppointmentsByStatus', CONTEXT, async () => {
+    // To avoid missing index errors, we query all appointments and filter/sort in memory.
+    const q = query(
+      collection(getDb(), COLLECTION),
+      orderBy('createdAt', 'desc')
+    );
+    const snap = await getDocs(q);
+    return snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }) as Appointment)
+      .filter(a => a.status === status);
+  });
 }
 
-export async function getAllAppointments(): Promise<Appointment[]> {
-  const q = query(
-    collection(getDb(), COLLECTION),
-    orderBy('date', 'desc')
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Appointment);
+export async function getAllAppointments(): Promise<FirebaseResult<Appointment[]>> {
+  return firebaseOperation('getAllAppointments', CONTEXT, async () => {
+    const q = query(
+      collection(getDb(), COLLECTION),
+      orderBy('date', 'desc')
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Appointment);
+  });
 }
 
 export async function updateAppointmentStatus(
   id: string,
   status: AppointmentStatus
-): Promise<void> {
-  const ref = doc(getDb(), COLLECTION, id);
-  await updateDoc(ref, { status });
+): Promise<FirebaseResult<void>> {
+  return firebaseOperation('updateAppointmentStatus', CONTEXT, async () => {
+    const ref = doc(getDb(), COLLECTION, id);
+    await updateDoc(ref, { status });
+  });
 }
 
 export async function updatePaymentStatus(
   id: string,
   paymentStatus: PaymentStatus
-): Promise<void> {
-  const ref = doc(getDb(), COLLECTION, id);
-  await updateDoc(ref, { paymentStatus });
+): Promise<FirebaseResult<void>> {
+  return firebaseOperation('updatePaymentStatus', CONTEXT, async () => {
+    const ref = doc(getDb(), COLLECTION, id);
+    await updateDoc(ref, { paymentStatus });
+  });
 }
 
-export async function getBookedSlots(date: string): Promise<string[]> {
-  const appointments = await getAppointmentsByDate(date);
-  return appointments
-    .filter((a) => a.status !== 'cancelled')
-    .map((a) => a.timeSlot);
+export async function getBookedSlots(date: string): Promise<FirebaseResult<string[]>> {
+  return firebaseOperation('getBookedSlots', CONTEXT, async () => {
+    const { data: appointments, error } = await getAppointmentsByDate(date);
+    if (error) throw new Error(error);
+    return (appointments || [])
+      .filter((a) => a.status !== 'cancelled')
+      .map((a) => a.timeSlot);
+  });
 }
 
 export function subscribeToAppointments(
-  callback: (appointments: Appointment[]) => void
+  callback: (appointments: Appointment[], error?: string) => void
 ): Unsubscribe {
-  try {
-    const q = query(
-      collection(getDb(), COLLECTION),
-      orderBy('date', 'desc')
+  const logger = createLogger(CONTEXT);
+  const q = query(
+    collection(getDb(), COLLECTION),
+    orderBy('date', 'desc')
+  );
+  return onSnapshot(q, (snap) => {
+    const appointments = snap.docs.map(
+      (d) => ({ id: d.id, ...d.data() }) as Appointment
     );
-    return onSnapshot(q, (snap) => {
-      const appointments = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as Appointment
-      );
-      callback(appointments);
-    }, (error) => {
-      console.error('[appointments] Snapshot error:', error);
-      callback([]);
-    });
-  } catch (error) {
-    console.error('[appointments] Failed to subscribe:', error);
-    callback([]);
-    return () => {};
-  }
+    callback(appointments);
+  }, (error) => {
+    logger.error({ error: formatError(error) }, 'Appointments subscription error');
+    callback([], 'Failed to sync appointments');
+  });
 }

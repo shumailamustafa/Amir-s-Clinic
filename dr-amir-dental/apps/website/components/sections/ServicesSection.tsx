@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Stethoscope,
@@ -104,10 +104,17 @@ interface SelectedService {
 }
 
 import { useServices } from '../../hooks/useServices';
-
+import { useBookingStore } from '../../stores/useBookingStore';
 export function ServicesSection() {
   const [selectedService, setSelectedService] = useState<SelectedService | null>(null);
   const { services, loading } = useServices(true);
+  const setPreSelectedService = useBookingStore(state => state.setPreSelectedService);
+
+  const handleBookService = (serviceId: string) => {
+    setPreSelectedService(serviceId);
+    setSelectedService(null);
+    document.getElementById('appointments')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   // Map real Firestore data to the format needed by the UI, or fallback to placeholder data if no real data exists
   const displayServices: SelectedService[] = services.length > 0 
@@ -322,10 +329,7 @@ export function ServicesSection() {
                 <Button
                   size="lg"
                   className="w-full"
-                  onClick={() => {
-                    setSelectedService(null);
-                    document.getElementById('appointments')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
+                  onClick={() => handleBookService(selectedService.id)}
                 >
                   Book This Service
                 </Button>

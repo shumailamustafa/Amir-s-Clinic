@@ -3,14 +3,20 @@
   "private": true,
   "scripts": {
     "dev": "turbo dev",
-    "build": "turbo build",
+    "prebuild": "tsx scripts/pre-build-check.ts",
+    "build": "pnpm prebuild && turbo build",
     "lint": "turbo lint",
     "type-check": "turbo type-check",
     "clean": "turbo clean"
   },
   "devDependencies": {
+    "tsx": "^4.21.0",
     "turbo": "^2.3.0",
     "typescript": "^5.3.3"
   },
-  "packageManager": "pnpm@9.15.0"
+  "packageManager": "pnpm@9.15.0",
+  "dependencies": {
+    "pino": "^10.3.1",
+    "pino-pretty": "^13.1.3"
+  }
 }

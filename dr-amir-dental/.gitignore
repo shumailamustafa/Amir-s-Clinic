@@ -34,3 +34,8 @@ pnpm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# Agentic
+.agent/
+.agent_work/
+.gemini/

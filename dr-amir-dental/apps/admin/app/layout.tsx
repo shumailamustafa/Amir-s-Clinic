@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '../components/providers/ThemeProvider';
+import { ErrorBoundary } from '../components/providers/ErrorBoundary';
+import { GlobalErrorHandler } from '../components/providers/GlobalErrorHandler';
+import { Toaster } from 'sonner';
 import './globals.css';
 
 const inter = Inter({
@@ -38,9 +41,13 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+        <ErrorBoundary>
+          <GlobalErrorHandler />
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
+          <Toaster position="bottom-right" richColors />
+        </ErrorBoundary>
       </body>
     </html>
   );

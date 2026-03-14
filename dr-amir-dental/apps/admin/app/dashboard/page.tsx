@@ -17,10 +17,22 @@ export default function DashboardOverview() {
 
   useEffect(() => {
     // We fetch all appointments, but in a real app might want to query by date range
-    const unsubAppts = subscribeToAppointments(data => setAppointments(data));
-    const unsubReviews = subscribeToReviews(data => setReviews(data));
-    const unsubMessages = subscribeToMessages(data => setMessages(data));
-    const unsubConfig = subscribeToClinicConfig(data => setConfig(data));
+    const unsubAppts = subscribeToAppointments((data, error) => {
+      if (error) console.error('DashboardOverview appts error:', error);
+      else setAppointments(data);
+    });
+    const unsubReviews = subscribeToReviews((data, error) => {
+      if (error) console.error('DashboardOverview reviews error:', error);
+      else setReviews(data);
+    });
+    const unsubMessages = subscribeToMessages((data, error) => {
+      if (error) console.error('DashboardOverview messages error:', error);
+      else setMessages(data);
+    });
+    const unsubConfig = subscribeToClinicConfig((data, error) => {
+      if (error) console.error('DashboardOverview config error:', error);
+      else setConfig(data);
+    });
 
     return () => {
       unsubAppts();

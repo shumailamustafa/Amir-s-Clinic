@@ -10,18 +10,17 @@ export function useClinicStatus() {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    try {
-      const unsubscribe = subscribeToClinicConfig((data) => {
+    const unsubscribe = subscribeToClinicConfig((data, subError) => {
+      if (subError) {
+        setError(new Error(subError));
+      } else {
         setConfig(data);
-        setLoading(false);
-      });
-
-      return () => unsubscribe();
-    } catch (err) {
-      console.error('Error subscribing to clinic config:', err);
-      setError(err instanceof Error ? err : new Error('Failed to subscribe to clinic config'));
+        setError(null);
+      }
       setLoading(false);
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   return { config, loading, error };

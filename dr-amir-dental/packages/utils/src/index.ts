@@ -47,10 +47,12 @@ export function generateReferenceNumber(): string {
 export function isClinicOpen(
   openHours: OpenHours,
   holidayDates: string[],
-  isHolidayModeOn: boolean
+  isHolidayModeOn: boolean,
+  emergencyMessage?: string
 ): { isOpen: boolean; statusText: string } {
   if (isHolidayModeOn) {
-    return { isOpen: false, statusText: 'Closed — Holiday' };
+    const message = emergencyMessage?.trim();
+    return { isOpen: false, statusText: message && message.length > 0 ? message : 'Closed — Holiday' };
   }
 
   const now = new Date();
@@ -135,3 +137,5 @@ export function slugify(text: string): string {
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
+export * from './logger';
+export * from './errorFormatter';
