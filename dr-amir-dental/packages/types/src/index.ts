@@ -48,7 +48,6 @@ export interface OpenHours {
 export interface SocialLinks {
   instagram: string;
   facebook: string;
-  tiktok: string;
   linkedin: string;
   youtube: string;
 }
@@ -75,6 +74,9 @@ export interface ClinicConfig {
   holidayDates: string[];
   holidayMode: boolean;
   emergencyMessage?: string;
+  galleryImages?: string[];
+  appointmentSlots?: string[];
+  maxDaysAhead?: number;
 }
 
 // ---------- Service ----------
@@ -87,6 +89,7 @@ export interface BeforeAfterImage {
 export interface Service {
   id: string;
   name: string;
+  iconName?: string;
   description: string;
   procedureSteps: string[];
   estimatedTime: string;

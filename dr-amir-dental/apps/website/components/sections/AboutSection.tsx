@@ -148,9 +148,13 @@ function DoctorTab({ data, loading }: { data: any, loading: boolean }) {
           viewport={{ once: true }}
           className="shrink-0"
         >
-          <div className="w-48 h-48 rounded-full border-4 border-[var(--color-primary)] p-1 shadow-lg">
-            <div className="w-full h-full rounded-full bg-[var(--color-surface)] flex items-center justify-center text-[var(--color-primary)]">
-              <span className="text-6xl">👨‍⚕️</span>
+          <div className="w-48 h-48 rounded-full border-4 border-[var(--color-primary)] p-1 shadow-lg overflow-hidden">
+            <div className="w-full h-full rounded-full bg-[var(--color-surface)] flex items-center justify-center text-[var(--color-primary)] overflow-hidden">
+              {doctorData.profileImageUrl ? (
+                <img src={doctorData.profileImageUrl} alt={doctorData.name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-6xl">👨‍⚕️</span>
+              )}
             </div>
           </div>
         </motion.div>
@@ -349,18 +353,29 @@ function ClinicTab({ data, loading }: { data: any, loading: boolean }) {
           Our Clinic
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {(clinicData?.gallery || []).map((_: any, index: number) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="aspect-square bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] flex items-center justify-center hover:border-[var(--color-primary)]/50 transition-all cursor-pointer hover:shadow-lg overflow-hidden"
-            >
-              <span className="text-[var(--color-text-secondary)] text-sm">Clinic Photo {index + 1}</span>
-            </motion.div>
-          ))}
+          {(clinicData?.galleryImages && clinicData.galleryImages.length > 0) ? (
+            clinicData.galleryImages.map((img: string, index: number) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="aspect-square bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] overflow-hidden flex items-center justify-center hover:border-[var(--color-primary)]/50 transition-all cursor-pointer hover:shadow-lg"
+              >
+                <img src={img} alt={`Clinic Photo ${index + 1}`} className="w-full h-full object-cover" />
+              </motion.div>
+            ))
+          ) : (
+            [1, 2, 3, 4].map((_, index) => (
+              <div
+                key={index}
+                className="aspect-square bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] flex items-center justify-center"
+              >
+                <span className="text-[var(--color-text-secondary)] text-sm">No Image</span>
+              </div>
+            ))
+          )}
         </div>
       </motion.div>
 
@@ -404,7 +419,7 @@ function ClinicTab({ data, loading }: { data: any, loading: boolean }) {
             <table className="w-full">
               <tbody>
                 {days.map((day, index: number) => {
-                  const hours = clinicData?.workingHours?.[day] || { isOpen: false, open: '', close: '' };
+                  const hours = clinicData?.openHours?.[day] || { isOpen: false, open: '', close: '' };
                   return (
                     <motion.tr
                       key={day}

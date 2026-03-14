@@ -161,7 +161,7 @@ export default function ClinicStatusPage() {
               }`}
             >
               <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                className={`inline-block h-5 w-5 transform rounded-full bg-[var(--color-surface)] transition-transform ${
                   isEmergencyClosed ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
@@ -182,7 +182,7 @@ export default function ClinicStatusPage() {
                     value={emergencyMessage}
                     onChange={(e) => setEmergencyMessage(e.target.value)}
                     placeholder="Enter message for website visitors..."
-                    className="w-full p-4 rounded-xl border border-red-200 bg-white focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all resize-none h-28 text-sm"
+                    className="w-full p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all resize-none h-28 text-sm text-[var(--color-text-primary)]"
                   />
                   <p className="mt-2 text-xs text-red-600/70 italic">
                     This message will appear at the top of the website while emergency closure is active.

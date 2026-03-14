@@ -23,6 +23,7 @@ import { useAppointments } from '../../hooks/useAppointments';
 import { useReviews } from '../../hooks/useReviews';
 import { useServices } from '../../hooks/useServices';
 import { useBookingStore } from '../../stores/useBookingStore';
+import { useClinicStatus } from '../../hooks/useClinicStatus';
 import { createAppointment } from '@dental/firebase';
 import { uploadToCloudinary } from '@dental/firebase';
 
@@ -36,7 +37,7 @@ const STEPS: { id: BookingStep; label: string; icon: React.ComponentType<{ class
   { id: 'confirmation', label: 'Done', icon: CheckCircle2 },
 ];
 
-const TIME_SLOTS = [
+const DEFAULT_TIME_SLOTS = [
   '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
   '12:00 PM', '12:30 PM', '02:00 PM', '02:30 PM',
   '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM',
@@ -78,7 +79,10 @@ export function AppointmentsSection() {
   const [reference, setReference] = useState('');
   const { reviews } = useReviews(true);
   const { services, loading: servicesLoading } = useServices();
+  const { config: clinicConfig } = useClinicStatus();
   const { preSelectedService, clearPreSelectedService } = useBookingStore();
+
+  const activeTimeSlots = clinicConfig?.appointmentSlots || DEFAULT_TIME_SLOTS;
 
   const servicesList = services.map(s => s.name);
 
@@ -284,39 +288,48 @@ export function AppointmentsSection() {
                 </div>
 
                 {/* Day headers */}
-                <div className="grid grid-cols-7 gap-1 mb-2">
+                <div className="grid grid-cols-7 gap-2 mb-3">
                   {DAYS_OF_WEEK.map(d => (
-                    <div key={d} className="text-center text-xs font-semibold text-[var(--color-text-secondary)] py-2">{d}</div>
+                    <div key={d} className="text-center text-[10px] uppercase tracking-wider font-bold text-[var(--color-primary)] opacity-80">{d}</div>
                   ))}
                 </div>
 
                 {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-1">
+                <div className="grid grid-cols-7 gap-2">
                   {calendarDays.map((day, i) => {
                     if (day === null) return <div key={`empty-${i}`} />;
                     const date = new Date(calendarYear, calendarMonth, day);
                     const isPast = date < today;
-                    const isSunday = date.getDay() === 0;
+                    
+                    // Dynamic day availability
+                    const dayName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
+                    const isClinicOpen = clinicConfig?.openHours ? (clinicConfig.openHours as any)[dayName]?.isOpen : (date.getDay() !== 0);
+                    
                     const isSelected = selectedDate?.toDateString() === date.toDateString();
                     const isToday = date.toDateString() === today.toDateString();
-                    const isDisabled = isPast || isSunday;
+                    const isDisabled = isPast || !isClinicOpen;
 
                     return (
                       <button
                         key={day}
                         disabled={isDisabled}
                         onClick={() => setSelectedDate(date)}
-                        className={`h-10 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                        className={`relative h-11 rounded-xl text-sm font-bold transition-all duration-300 cursor-pointer ${
                           isDisabled
-                            ? 'text-[var(--color-text-secondary)]/40 cursor-not-allowed'
+                            ? isPast
+                              ? 'text-[var(--color-text-secondary)]/25 bg-[var(--color-surface)]/10 line-through cursor-not-allowed'
+                              : 'text-red-500/80 bg-red-500/5 border border-red-500/20 cursor-not-allowed'
                             : isSelected
-                            ? 'bg-[var(--color-primary)] text-white'
+                            ? 'bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/40 scale-105 z-10'
                             : isToday
-                            ? 'border-2 border-[var(--color-primary)] text-[var(--color-primary)]'
-                            : 'text-[var(--color-text-primary)] hover:bg-[var(--color-surface)]'
+                            ? 'border-2 border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary)]/5'
+                            : 'text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] hover:scale-105 hover:shadow-md'
                         }`}
                       >
                         {day}
+                        {isToday && !isSelected && (
+                          <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[var(--color-primary)]" />
+                        )}
                       </button>
                     );
                   })}
@@ -339,7 +352,7 @@ export function AppointmentsSection() {
                 </p>
 
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                  {TIME_SLOTS.map((slot) => {
+                  {activeTimeSlots.map((slot) => {
                     const isBooked = bookedSlots.includes(slot);
                     return (
                       <button

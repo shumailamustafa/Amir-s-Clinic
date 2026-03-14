@@ -89,7 +89,8 @@ export function BlogSection() {
         readingTime: '5 min read', // Placeholder reading time
         date: p.publishedAt || p.createdAt,
         imageUrl: p.featuredImageUrl,
-        slug: p.slug
+        slug: p.slug,
+        content: p.content
       }))
     : blogData;
 
@@ -170,9 +171,13 @@ export function BlogSection() {
               className="bg-[var(--color-bg)] rounded-2xl border border-[var(--color-border)] shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] transition-all overflow-hidden group cursor-pointer"
               onClick={() => setSelectedPost(post)}
             >
-              {/* Image Placeholder */}
-              <div className="aspect-video bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-surface)] flex items-center justify-center">
-                <BookOpen className="w-10 h-10 text-[var(--color-primary)]/30" />
+              {/* Featured Image */}
+              <div className="aspect-video bg-[var(--color-surface)] flex items-center justify-center overflow-hidden">
+                {post.imageUrl ? (
+                  <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                ) : (
+                  <BookOpen className="w-10 h-10 text-[var(--color-primary)]/30" />
+                )}
               </div>
 
               <div className="p-6">
@@ -277,16 +282,35 @@ export function BlogSection() {
                 </p>
 
                 <div className="prose prose-sm max-w-none text-[var(--color-text-primary)]">
-                  {/* Image placeholder in detail */}
-                  <div className="aspect-video bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-surface)] flex items-center justify-center rounded-2xl mb-8">
-                    <BookOpen className="w-16 h-16 text-[var(--color-primary)]/20" />
+                  {/* Featured Image in detail */}
+                  <div className="aspect-video bg-[var(--color-surface)] flex items-center justify-center rounded-2xl mb-8 overflow-hidden">
+                    {selectedPost.imageUrl ? (
+                      <img src={selectedPost.imageUrl} alt={selectedPost.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <BookOpen className="w-16 h-16 text-[var(--color-primary)]/20" />
+                    )}
                   </div>
 
                   {/* Blog Content */}
-                  <div className="space-y-4 leading-relaxed whitespace-pre-wrap">
-                    {selectedPost.content || posts.find(p => p.id === selectedPost.id)?.content || selectedPost.excerpt + "\n\n(Full content of this post will be managed through the admin panel. This is an overview of the article's key points and recommendations from Dr. Amir's dental health guide.)"}
-                  </div>
+                  <div 
+                    className="space-y-4 leading-relaxed blog-content-styles"
+                    dangerouslySetInnerHTML={{ __html: selectedPost.content || "" }}
+                  />
+                  {!selectedPost.content && (
+                    <p className="text-[var(--color-text-secondary)] italic">
+                      {selectedPost.excerpt}
+                    </p>
+                  )}
                 </div>
+
+                <style jsx global>{`
+                  .blog-content-styles p { margin-bottom: 1rem; }
+                  .blog-content-styles h1, .blog-content-styles h2, .blog-content-styles h3 { margin-top: 1.5rem; margin-bottom: 0.75rem; font-weight: bold; }
+                  .blog-content-styles ul, .blog-content-styles ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+                  .blog-content-styles ul { list-style-type: disc; }
+                  .blog-content-styles ol { list-style-type: decimal; }
+                  .blog-content-styles img { max-width: 100%; border-radius: 0.75rem; margin: 1.5rem 0; }
+                `}</style>
 
                 {/* Share / Tags Placeholder */}
                 <div className="mt-12 pt-8 border-t border-[var(--color-border)]">

@@ -101,6 +101,7 @@ interface SelectedService {
   estimatedTime: string;
   priceMin: number;
   priceMax: number;
+  beforeAfterImages?: Array<{ before: string; after: string }>;
 }
 
 import { useServices } from '../../hooks/useServices';
@@ -122,13 +123,14 @@ export function ServicesSection() {
         id: s.id,
         name: s.name,
         description: s.description,
-        icon: Stethoscope, // Fallback icon since Firestore uses imageUrl
+        icon: Sparkles, // Real icon mapping could be added here if saved in Firestore
         procedureSteps: s.procedureSteps || [],
         estimatedTime: s.estimatedTime || '',
         priceMin: s.priceMin || 0,
         priceMax: s.priceMax || 0,
+        beforeAfterImages: s.beforeAfterImages || [],
       }))
-    : servicesData;
+    : (loading ? [] : servicesData);
 
   return (
     <section id="services" className="relative py-20 bg-[var(--color-surface)] overflow-hidden">
@@ -152,36 +154,44 @@ export function ServicesSection() {
 
         {/* Services Grid — 3 columns, staggered */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
-          {displayServices.map((service, index) => (
-            <motion.div
-              key={service.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1, duration: 0.5 }}
-              whileHover={{ y: -4 }}
-              className="bg-[var(--color-bg)] rounded-2xl p-6 border border-[var(--color-border)] shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] transition-all cursor-pointer group"
-              onClick={() => setSelectedService(service)}
-            >
-              {/* Icon */}
-              <div className="w-14 h-14 rounded-xl bg-[var(--color-primary)]/10 flex items-center justify-center mb-5 group-hover:bg-[var(--color-primary)]/20 transition-colors">
-                <service.icon className="w-7 h-7 text-[var(--color-primary)]" />
-              </div>
+          {displayServices.length > 0 ? (
+            displayServices.map((service, index) => (
+              <motion.div
+                key={service.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1, duration: 0.5 }}
+                whileHover={{ y: -4 }}
+                className="bg-[var(--color-bg)] rounded-2xl p-6 border border-[var(--color-border)] shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] transition-all cursor-pointer group"
+                onClick={() => setSelectedService(service)}
+              >
+                {/* Icon */}
+                <div className="w-14 h-14 rounded-xl bg-[var(--color-primary)]/10 flex items-center justify-center mb-5 group-hover:bg-[var(--color-primary)]/20 transition-colors">
+                  <service.icon className="w-7 h-7 text-[var(--color-primary)]" />
+                </div>
 
-              {/* Content */}
-              <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">
-                {service.name}
-              </h3>
-              <p className="text-sm text-[var(--color-text-secondary)] mb-4 line-clamp-2">
-                {service.description}
-              </p>
+                {/* Content */}
+                <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">
+                  {service.name}
+                </h3>
+                <p className="text-sm text-[var(--color-text-secondary)] mb-4 line-clamp-2">
+                  {service.description}
+                </p>
 
-              {/* View Details */}
-              <span className="text-sm font-semibold text-[var(--color-primary)] group-hover:underline">
-                View Details →
-              </span>
-            </motion.div>
-          ))}
+                {/* View Details */}
+                <span className="text-sm font-semibold text-[var(--color-primary)] group-hover:underline">
+                  View Details →
+                </span>
+              </motion.div>
+            ))
+          ) : !loading && (
+            <div className="col-span-full py-12 text-center bg-[var(--color-bg)] rounded-3xl border border-dashed border-[var(--color-border)]">
+              <Sparkles className="w-12 h-12 text-[var(--color-primary)]/20 mx-auto mb-4" />
+              <p className="text-[var(--color-text-primary)] font-bold mb-1">No Services Added Yet</p>
+              <p className="text-[var(--color-text-secondary)] text-sm">We'll add our treatment plans soon!</p>
+            </div>
+          )}
         </div>
 
         {/* Why Choose Us Strip */}
@@ -310,19 +320,40 @@ export function ServicesSection() {
                   </div>
                 </div>
 
-                {/* Before/After Placeholder */}
+                {/* Before/After Gallery */}
                 <div className="mb-8">
                   <h4 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">
-                    Before & After
+                    Transformation Gallery
                   </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="aspect-square bg-[var(--color-surface)] rounded-xl flex items-center justify-center border border-[var(--color-border)]">
-                      <span className="text-xs text-[var(--color-text-secondary)]">Before</span>
+                  {selectedService.beforeAfterImages && selectedService.beforeAfterImages.length > 0 ? (
+                    <div className="space-y-6">
+                      {selectedService.beforeAfterImages.map((img, idx) => (
+                        <div key={idx} className="grid grid-cols-2 gap-4">
+                          <div className="group relative">
+                            <div className="aspect-square bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] overflow-hidden">
+                              <img src={img.before} alt="Before" className="w-full h-full object-cover" />
+                            </div>
+                            <span className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 text-white text-[10px] font-bold rounded">BEFORE</span>
+                          </div>
+                          <div className="group relative">
+                            <div className="aspect-square bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] overflow-hidden">
+                              <img src={img.after} alt="After" className="w-full h-full object-cover" />
+                            </div>
+                            <span className="absolute bottom-2 left-2 px-2 py-1 bg-[var(--color-primary)] text-white text-[10px] font-bold rounded">AFTER</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="aspect-square bg-[var(--color-surface)] rounded-xl flex items-center justify-center border border-[var(--color-border)]">
-                      <span className="text-xs text-[var(--color-text-secondary)]">After</span>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4 opacity-50">
+                      <div className="aspect-square bg-[var(--color-surface)] rounded-xl flex items-center justify-center border border-[var(--color-border)]">
+                        <span className="text-xs text-[var(--color-text-secondary)]">Before</span>
+                      </div>
+                      <div className="aspect-square bg-[var(--color-surface)] rounded-xl flex items-center justify-center border border-[var(--color-border)]">
+                        <span className="text-xs text-[var(--color-text-secondary)]">After</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* CTA */}

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Calendar as CalendarIcon, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
 import { Button, Card, Badge, Modal, Input } from '@dental/ui';
+import { TipTapEditor } from '../../../components/ui/TipTapEditor';
 import { 
   subscribeToBlogPosts, 
   createBlogPost, 
@@ -141,8 +142,8 @@ export default function BlogPage() {
             <thead>
               <tr className="bg-[var(--color-surface)] border-b border-[var(--color-border)] text-[var(--color-text-secondary)] text-sm">
                 <th className="p-4 font-medium">Post Title</th>
-                <th className="p-4 font-medium">Author</th>
-                <th className="p-4 font-medium">Date</th>
+                <th className="p-4 font-medium hidden md:table-cell">Author</th>
+                <th className="p-4 font-medium hidden md:table-cell">Date</th>
                 <th className="p-4 font-medium">Status</th>
                 <th className="p-4 font-medium text-right">Actions</th>
               </tr>
@@ -150,14 +151,14 @@ export default function BlogPage() {
             <tbody className="divide-y divide-[var(--color-border)]">
               {posts.map((post) => (
                 <tr key={post.id} className="hover:bg-[var(--color-surface)]/50 transition-colors group">
-                  <td className="p-4">
-                    <p className="font-bold text-[var(--color-text-primary)]">{post.title}</p>
-                    <div className="flex items-center gap-1 mt-1 text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-primary)] cursor-pointer">
-                      <LinkIcon className="w-3 h-3" /> /blog/{post.slug}
+                  <td className="p-4 max-w-[200px] sm:max-w-xs">
+                    <p className="font-bold text-[var(--color-text-primary)] truncate">{post.title}</p>
+                    <div className="flex items-center gap-1 mt-1 text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-primary)] cursor-pointer truncate">
+                      <LinkIcon className="w-3 h-3 flex-shrink-0" /> <span className="truncate">/blog/{post.slug}</span>
                     </div>
                   </td>
-                  <td className="p-4 text-sm text-[var(--color-text-secondary)]">Dr. Amir</td>
-                  <td className="p-4 text-sm text-[var(--color-text-secondary)]">
+                  <td className="p-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">Dr. Amir</td>
+                  <td className="p-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
                     {new Date(post.createdAt).toLocaleDateString()}
                   </td>
                   <td className="p-4">
@@ -205,28 +206,9 @@ export default function BlogPage() {
 
           <div>
             <label className="text-sm font-medium text-[var(--color-text-primary)] mb-1.5 flex justify-between">
-              Content
-              <span className="text-[var(--color-primary)] text-xs flex items-center gap-1">
-                TipTap Editor Placeholder <Edit2 className="w-3 h-3"/>
-              </span>
+              Article Content
             </label>
-            <div className="border border-[var(--color-border)] rounded-lg overflow-hidden flex flex-col">
-              {/* Fake Toolbar */}
-              <div className="bg-[var(--color-surface)] border-b border-[var(--color-border)] p-2 flex gap-2">
-                <Button variant="ghost" size="sm" className="w-8 h-8 p-0 font-bold">B</Button>
-                <Button variant="ghost" size="sm" className="w-8 h-8 p-0 italic">I</Button>
-                <Button variant="ghost" size="sm" className="w-8 h-8 p-0 underline">U</Button>
-                <div className="w-px h-6 bg-[var(--color-border)] mx-1 self-center" />
-                <Button variant="ghost" size="sm" className="w-8 h-8 p-0"><LinkIcon className="w-4 h-4" /></Button>
-              </div>
-              {/* Fake Editor Area */}
-              <textarea 
-                className="w-full p-4 bg-[var(--color-bg)] focus:outline-none resize-y min-h-[200px] text-[var(--color-text-primary)] border-none"
-                placeholder="Start writing..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-              />
-            </div>
+            <TipTapEditor content={content} onChange={setContent} />
           </div>
 
           <div>

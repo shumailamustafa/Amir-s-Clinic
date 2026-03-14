@@ -9,15 +9,43 @@ import type { ClinicConfig } from '@dental/types';
 export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<ClinicConfig | null>(null);
 
   useEffect(() => {
     const unsub = subscribeToClinicConfig((data, error) => {
       if (error) {
         console.error('SettingsPage sub error:', error);
-        return;
       }
-      setConfig(data);
+      
+      if (data) {
+        setConfig(data);
+      } else {
+        // Fallback defaults if config doesn't exist
+        setConfig({
+          name: 'Dr. Amir Dental Care',
+          tagline: 'Your Smile, Our Priority',
+          phone: '',
+          whatsapp: '',
+          email: '',
+          address: '',
+          mapCoordinates: { lat: 31.5204, lng: 74.3587 },
+          socialLinks: { instagram: '', facebook: '', tiktok: '', linkedin: '', youtube: '' },
+          openHours: {
+            monday: { open: '09:00', close: '21:00', isOpen: true },
+            tuesday: { open: '09:00', close: '21:00', isOpen: true },
+            wednesday: { open: '09:00', close: '21:00', isOpen: true },
+            thursday: { open: '09:00', close: '21:00', isOpen: true },
+            friday: { open: '09:00', close: '21:00', isOpen: true },
+            saturday: { open: '09:00', close: '21:00', isOpen: true },
+            sunday: { open: '09:00', close: '13:00', isOpen: false },
+          },
+          holidayDates: [],
+          holidayMode: false,
+          emergencyMessage: ''
+        });
+      }
+      setLoading(false);
     });
     return unsub;
   }, []);
@@ -42,7 +70,7 @@ export default function SettingsPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (!config) return <div className="p-8 text-[var(--color-text-secondary)]">Loading settings...</div>;
+  if (loading || !config) return <div className="p-8 text-[var(--color-text-secondary)]">Loading settings...</div>;
 
   const updateField = (field: keyof ClinicConfig, value: any) => {
     setConfig({ ...config, [field]: value });

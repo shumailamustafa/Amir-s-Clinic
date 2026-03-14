@@ -11,37 +11,36 @@ import { useReviews } from '../../hooks/useReviews';
 // Hardcoded stats defaults — will be recalculated from real data
 const statsDataDefaults = { totalReviews: 0, averageRating: 0, fiveStarCount: 0 };
 
-function AnimatedCounter({ target, duration = 2000 }: { target: number; duration?: number }) {
+function AnimatedCounter({ target, duration = 1500 }: { target: number; duration?: number }) {
   const [count, setCount] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  const hasAnimated = useRef(false);
+  const prevTargetRef = useRef(0);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !hasAnimated.current) {
-          hasAnimated.current = true;
-          const startTime = performance.now();
+    const startValue = count;
+    const endValue = target;
+    
+    if (startValue === endValue) return;
 
-          const animate = (currentTime: number) => {
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.floor(eased * target));
-            if (progress < 1) requestAnimationFrame(animate);
-          };
+    const startTime = performance.now();
 
-          requestAnimationFrame(animate);
-        }
-      },
-      { threshold: 0.5 }
-    );
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      
+      const currentCount = Math.floor(startValue + eased * (endValue - startValue));
+      setCount(currentCount);
 
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+    prevTargetRef.current = target;
   }, [target, duration]);
 
-  return <span ref={ref}>{count.toLocaleString()}</span>;
+  return <span>{count.toLocaleString()}</span>;
 }
 
 export function ReviewsSection() {

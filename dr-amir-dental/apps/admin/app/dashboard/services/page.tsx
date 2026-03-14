@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, GripVertical, Image as ImageIcon } from 'lucide-react';
 import { Button, Card, Badge, Modal, Input } from '@dental/ui';
-import { 
-  subscribeToServices, 
-  createService, 
-  updateService, 
-  deleteService, 
-  reorderServices 
+import {
+  subscribeToServices,
+  createService,
+  updateService,
+  deleteService,
+  reorderServices
 } from '@dental/firebase';
 import { uploadToCloudinary } from '@dental/firebase';
 import type { Service } from '@dental/types';
@@ -20,14 +20,17 @@ export default function ServicesPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   // Form State
+  // Form State
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [priceMin, setPriceMin] = useState(0);
   const [priceMax, setPriceMax] = useState(0);
   const [duration, setDuration] = useState('');
   const [isVisible, setIsVisible] = useState(true);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [procedureSteps, setProcedureSteps] = useState<string[]>([]);
+  const [selectedIcon, setSelectedIcon] = useState<string>('Shield');
+  const [beforeAfterImages, setBeforeAfterImages] = useState<{ before: string; after: string }[]>([]);
+  const [isUploadingBA, setIsUploadingBA] = useState<number | null>(null);
 
   // Drag and Drop State
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -51,8 +54,9 @@ export default function ServicesPage() {
     setPriceMax(service.priceMax);
     setDuration(service.estimatedTime);
     setIsVisible(service.isVisible);
-    setImageFile(null);
-    setPreviewUrl(service.imageUrl || '');
+    setProcedureSteps(service.procedureSteps || []);
+    setSelectedIcon(service.iconName || 'Shield');
+    setBeforeAfterImages(service.beforeAfterImages || []);
     setIsModalOpen(true);
   };
 
@@ -64,8 +68,9 @@ export default function ServicesPage() {
     setPriceMax(0);
     setDuration('');
     setIsVisible(true);
-    setImageFile(null);
-    setPreviewUrl('');
+    setProcedureSteps([]);
+    setSelectedIcon('Shield');
+    setBeforeAfterImages([]);
     setIsModalOpen(true);
   };
 
@@ -80,28 +85,31 @@ export default function ServicesPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    let imageUrl = previewUrl; // Use existing if no file uploaded
-    
-    if (imageFile) {
-      const { data, error: uploadError } = await uploadToCloudinary(imageFile, 'dr-amir-services');
-      if (uploadError) {
-        alert(`Failed to upload image: ${uploadError}`);
-        setIsSaving(false);
-        return;
-      }
-      imageUrl = data || '';
-    }
 
     let result;
     if (editingService) {
       result = await updateService(editingService.id, {
-        name, description, priceMin, priceMax, estimatedTime: duration, isVisible, imageUrl
+        name,
+        description,
+        priceMin,
+        priceMax,
+        estimatedTime: duration,
+        isVisible,
+        procedureSteps,
+        iconName: selectedIcon,
+        beforeAfterImages
       });
     } else {
       result = await createService({
-        name, description, priceMin, priceMax, estimatedTime: duration, isVisible,
-        procedureSteps: [],
-        imageUrl,
+        name,
+        description,
+        priceMin,
+        priceMax,
+        estimatedTime: duration,
+        isVisible,
+        procedureSteps,
+        iconName: selectedIcon,
+        imageUrl: '',
         beforeAfterImages: [],
         order: services.length,
         createdAt: new Date().toISOString()
@@ -116,11 +124,16 @@ export default function ServicesPage() {
     setIsSaving(false);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBAUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number, side: 'before' | 'after') => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImageFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      setIsUploadingBA(index);
+      const { data, error } = await uploadToCloudinary(e.target.files[0], 'dr-amir-ba');
+      if (data) {
+        const updated = [...beforeAfterImages];
+        updated[index] = { ...updated[index], [side]: data };
+        setBeforeAfterImages(updated);
+      }
+      setIsUploadingBA(null);
     }
   };
 
@@ -150,7 +163,7 @@ export default function ServicesPage() {
 
     const [draggedItem] = list.splice(draggedIdx, 1);
     list.splice(targetIdx, 0, draggedItem);
-    
+
     // Immediately fix local state so it looks fast
     setServices(list);
 
@@ -159,7 +172,6 @@ export default function ServicesPage() {
     const { error } = await reorderServices(orderedIds);
     if (error) {
       alert(`Failed to save new order: ${error}`);
-      // Ideally revert state here, but for brevity keep it
     }
   };
 
@@ -170,7 +182,7 @@ export default function ServicesPage() {
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Services</h1>
           <p className="text-[var(--color-text-secondary)]">Manage treatments, prices, and display order.</p>
         </div>
-        
+
         <Button onClick={handleNew}>
           <Plus className="w-4 h-4 mr-2" /> Add New Service
         </Button>
@@ -180,7 +192,7 @@ export default function ServicesPage() {
         <div className="p-4 bg-[var(--color-surface)] border-b border-[var(--color-border)] flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
           <GripVertical className="w-4 h-4" /> Drag rows to reorder how they appear on the website
         </div>
-        
+
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-[var(--color-border)] text-[var(--color-text-secondary)] text-sm">
@@ -193,8 +205,8 @@ export default function ServicesPage() {
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
             {services.map((service) => (
-              <tr 
-                key={service.id} 
+              <tr
+                key={service.id}
                 className="hover:bg-[var(--color-surface)]/50 transition-colors group cursor-grab active:cursor-grabbing"
                 draggable
                 onDragStart={(e) => handleDragStart(e, service.id)}
@@ -231,23 +243,23 @@ export default function ServicesPage() {
       </Card>
 
       {/* Edit/Create Modal */}
-      <Modal 
-        isOpen={isModalOpen} 
+      <Modal
+        isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingService ? "Edit Service" : "Add New Service"}
         size="lg"
       >
         <div className="space-y-4">
-          <Input 
-            label="Service Name" 
+          <Input
+            label="Service Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Dental Implants" 
+            placeholder="e.g. Dental Implants"
           />
-          
+
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">Description</label>
-            <textarea 
+            <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-y min-h-[100px]"
@@ -261,27 +273,130 @@ export default function ServicesPage() {
           </div>
 
           <Input label="Estimated Duration" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 30-45 minutes" />
-          
+
+          {/* Icon Selector */}
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">Icon / Image (Cloudinary)</label>
-            <label className="border-2 border-dashed border-[var(--color-border)] rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[var(--color-primary)] transition-colors relative overflow-hidden h-32">
-              <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
-              {previewUrl ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={previewUrl} alt="Preview" className="w-full h-full object-contain absolute" />
-              ) : (
-                <>
-                  <ImageIcon className="w-8 h-8 text-[var(--color-text-secondary)] mb-2" />
-                  <p className="text-sm font-medium text-[var(--color-text-primary)]">Click to upload image</p>
-                  <p className="text-xs text-[var(--color-text-secondary)]">JPG, PNG up to 2MB</p>
-                </>
+            <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">Category Icon</label>
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+              {['Shield', 'Heart', 'Smile', 'Sparkles', 'Stethoscope', 'Syringe', 'Eye', 'Crown', 'Baby', 'Star', 'Activity', 'Award'].map((iconName) => {
+                const Icon = require('lucide-react')[iconName] || require('lucide-react').Shield;
+                return (
+                  <button
+                    key={iconName}
+                    title={iconName}
+                    onClick={() => setSelectedIcon(iconName)}
+                    className={`p-3 rounded-xl border flex items-center justify-center transition-all ${selectedIcon === iconName
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)] shadow-sm'
+                        : 'border-[var(--color-border)] hover:border-[var(--color-text-tertiary)] text-[var(--color-text-tertiary)]'
+                      }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Procedure Steps */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-[var(--color-text-primary)]">Procedure Steps</label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setProcedureSteps([...procedureSteps, ''])}
+              >
+                <Plus className="w-3 h-3 mr-1" /> Add Step
+              </Button>
+            </div>
+            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+              {procedureSteps.map((step, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    placeholder={`Step ${index + 1}`}
+                    value={step}
+                    onChange={(e) => {
+                      const newSteps = [...procedureSteps];
+                      newSteps[index] = e.target.value;
+                      setProcedureSteps(newSteps);
+                    }}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 h-10 px-2"
+                    onClick={() => setProcedureSteps(procedureSteps.filter((_, i) => i !== index))}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              {procedureSteps.length === 0 && (
+                <p className="text-xs text-[var(--color-text-tertiary)] text-center py-4 bg-[var(--color-surface)] rounded-xl border border-dashed border-[var(--color-border)]">
+                  No steps added yet. Click "Add Step" to begin.
+                </p>
               )}
-            </label>
+            </div>
+          </div>
+
+
+          {/* Before/After Gallery */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-[var(--color-text-primary)]">Transformation Gallery (Before/After)</label>
+              <Button variant="ghost" size="sm" onClick={() => setBeforeAfterImages([...beforeAfterImages, { before: '', after: '' }])}>
+                <Plus className="w-3 h-3 mr-1" /> Add Result
+              </Button>
+            </div>
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {beforeAfterImages.map((ba, index) => (
+                <div key={index} className="flex gap-4 p-4 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] group relative">
+                  <div className="flex-1 grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase">Before</span>
+                      <label className="aspect-square border border-[var(--color-border)] rounded-lg flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors relative overflow-hidden">
+                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleBAUpload(e, index, 'before')} />
+                        {ba.before ? (
+                          <img src={ba.before} className="w-full h-full object-cover absolute" alt="Before" />
+                        ) : (
+                          <Plus className="w-4 h-4 text-[var(--color-text-tertiary)]" />
+                        )}
+                      </label>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase">After</span>
+                      <label className="aspect-square border border-[var(--color-border)] rounded-lg flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors relative overflow-hidden">
+                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleBAUpload(e, index, 'after')} />
+                        {ba.after ? (
+                          <img src={ba.after} className="w-full h-full object-cover absolute" alt="After" />
+                        ) : (
+                          <Plus className="w-4 h-4 text-[var(--color-text-tertiary)]" />
+                        )}
+                      </label>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 absolute -top-2 -right-2 bg-white shadow-sm border border-red-100 rounded-full w-6 h-6 p-0 opacity-0 group-hover:opacity-100"
+                    onClick={() => setBeforeAfterImages(beforeAfterImages.filter((_, i) => i !== index))}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))}
+              {beforeAfterImages.length === 0 && (
+                <div className="text-center py-6 border-2 border-dashed border-[var(--color-border)] rounded-xl text-[var(--color-text-tertiary)] text-xs">
+                  No transformation photos yet. High-quality before/after photos increase patient trust!
+                </div>
+              )}
+            </div>
           </div>
 
           <label className="flex items-center gap-3 cursor-pointer py-2">
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={isVisible}
               onChange={(e) => setIsVisible(e.target.checked)}
               className="w-5 h-5 accent-[var(--color-primary)] rounded border-[var(--color-border)]"

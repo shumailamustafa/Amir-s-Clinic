@@ -23,7 +23,11 @@ function AdminThemeToggle() {
   );
 }
 
-export function AdminHeader() {
+interface AdminHeaderProps {
+  onMenuClick?: () => void;
+}
+
+export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -38,9 +42,12 @@ export function AdminHeader() {
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-[var(--color-bg)]/80 backdrop-blur-md border-b border-[var(--color-border)] flex items-center justify-between px-4 sm:px-6 lg:px-8">
-      {/* Mobile Menu Button - will implement full mobile sidebar later if needed */}
+      {/* Mobile Menu Button - implemented with state toggle */}
       <div className="flex items-center lg:hidden">
-        <button className="p-2 -ml-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]">
+        <button 
+          onClick={onMenuClick}
+          className="p-2 -ml-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]"
+        >
           <Menu className="w-6 h-6" />
         </button>
       </div>

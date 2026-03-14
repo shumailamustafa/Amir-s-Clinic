@@ -1,20 +1,27 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FileText, CheckCircle2, XCircle, Eye, Search, Filter } from 'lucide-react';
-import { Button, Card, Badge, Modal } from '@dental/ui';
-import { subscribeToAppointments, updateAppointmentStatus } from '@dental/firebase';
-import type { Appointment } from '@dental/types';
+import { FileText, CheckCircle2, XCircle, Eye, Search, Filter, Settings, Plus, Trash2, Clock } from 'lucide-react';
+import { Button, Card, Badge, Modal, Input } from '@dental/ui';
+import { subscribeToAppointments, updateAppointmentStatus, subscribeToClinicConfig, updateClinicConfig } from '@dental/firebase';
+import type { Appointment, ClinicConfig, OpenHours } from '@dental/types';
+import { toast } from 'sonner';
 
 export default function AppointmentsPage() {
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'confirmed'>('pending');
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'confirmed' | 'settings'>('pending');
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Settings State
+  const [slots, setSlots] = useState<string[]>([]);
+  const [newSlot, setNewSlot] = useState('10:00 AM');
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [clinicConfig, setClinicConfig] = useState<ClinicConfig | null>(null);
 
   useEffect(() => {
-    const unsubscribe = subscribeToAppointments((data, error) => {
+    const unsubscribeAppts = subscribeToAppointments((data, error) => {
       if (error) {
         console.error('AppointmentsPage sub error:', error);
         return;
@@ -25,7 +32,20 @@ export default function AppointmentsPage() {
         if (updatedSelected) setSelectedAppt(updatedSelected);
       }
     });
-    return unsubscribe;
+
+    const unsubscribeConfig = subscribeToClinicConfig((config) => {
+      if (config) {
+        setClinicConfig(config);
+        if (config.appointmentSlots) {
+          setSlots(config.appointmentSlots);
+        }
+      }
+    });
+
+    return () => {
+      unsubscribeAppts();
+      unsubscribeConfig();
+    };
   }, [selectedAppt]);
 
   const filtered = appointments.filter(a => {
@@ -46,9 +66,48 @@ export default function AppointmentsPage() {
     setIsUpdating(true);
     const { error } = await updateAppointmentStatus(id, status);
     if (error) {
-      alert(`Failed to update status: ${error}`);
+      toast.error(`Failed to update status: ${error}`);
+    } else {
+      toast.success(`Appointment ${status}`);
     }
     setIsUpdating(false);
+  };
+
+  const handleAddSlot = () => {
+    if (!newSlot) return;
+    if (slots.includes(newSlot)) {
+      toast.error('Slot already exists');
+      return;
+    }
+    setSlots([...slots].sort((a, b) => {
+      const timeA = new Date(`1970/01/01 ${a}`).getTime();
+      const timeB = new Date(`1970/01/01 ${b}`).getTime();
+      return timeA - timeB;
+    }));
+    setSlots(prev => [...prev, newSlot].sort()); // Simple sort for now, better to use time comparison
+    // Real time sort:
+    const sorted = [...slots, newSlot].sort((a, b) => {
+      return new Date('1970/01/01 ' + a).getTime() - new Date('1970/01/01 ' + b).getTime();
+    });
+    setSlots(sorted);
+    setNewSlot('');
+  };
+
+  const handleRemoveSlot = (slotToRemove: string) => {
+    setSlots(slots.filter(s => s !== slotToRemove));
+  };
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true);
+    const { error } = await updateClinicConfig({
+      appointmentSlots: slots
+    });
+    if (error) {
+      toast.error('Failed to save settings');
+    } else {
+      toast.success('Booking settings updated');
+    }
+    setSavingSettings(false);
   };
 
 
@@ -101,9 +160,98 @@ export default function AppointmentsPage() {
         >
           All Appointments
         </button>
+        <button 
+          onClick={() => setActiveTab('settings')}
+          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'settings' ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+        >
+          <Settings className="w-4 h-4 inline mr-2" />
+          Booking Settings
+        </button>
       </div>
 
-      {/* List */}
+      {activeTab === 'settings' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <Card className="p-6">
+            <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-[var(--color-primary)]" />
+              Manage Time Slots
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-6">
+              Define the available time intervals for appointments on the website.
+            </p>
+
+            <div className="flex gap-2 mb-6">
+              <Input 
+                type="text" 
+                placeholder="e.g. 10:00 AM" 
+                value={newSlot}
+                onChange={(e) => setNewSlot(e.target.value)}
+                className="flex-1"
+              />
+              <Button onClick={handleAddSlot}>
+                <Plus className="w-4 h-4 mr-1" /> Add
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {slots.map(slot => (
+                <div key={slot} className="group flex items-center justify-between p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 transition-all">
+                  <span className="text-sm font-medium text-[var(--color-text-primary)]">{slot}</span>
+                  <button 
+                    onClick={() => handleRemoveSlot(slot)}
+                    className="p-1 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-[var(--color-border)] flex justify-end">
+              <Button onClick={handleSaveSettings} isLoading={savingSettings}>
+                Save Changes
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-[var(--color-primary)]/5 border-[var(--color-primary)]/20">
+            <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+              <Search className="w-5 h-5 text-[var(--color-primary)]" />
+              Available Days
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-6">
+              These days are currently enabled based on your <span className="font-bold">Clinic Status</span> settings.
+            </p>
+
+            <div className="space-y-3">
+              {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
+                const isOpen = clinicConfig?.openHours?.[day as keyof OpenHours]?.isOpen;
+                return (
+                  <div key={day} className="flex items-center justify-between p-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]">
+                    <span className="text-sm font-bold capitalize text-[var(--color-text-primary)]">{day}</span>
+                    <Badge variant={isOpen ? 'success' : 'closed'}>
+                      {isOpen ? 'AVAILABLE' : 'OFF'}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-[var(--color-border)]">
+              <p className="text-xs text-[var(--color-text-secondary)] mb-4">
+                To change which days or hours the clinic is open, please visit the Status page.
+              </p>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => window.location.href = '/dashboard/clinic-status'}
+              >
+                Go to Clinic Status
+              </Button>
+            </div>
+          </Card>
+        </div>
+      ) : (
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -137,7 +285,7 @@ export default function AppointmentsPage() {
                   <td className="p-4 text-right">
                     <Button variant="outline" size="sm" onClick={() => setSelectedAppt(appt)}>
                       {appt.status === 'pending' ? (
-                        <>Verify Payment</>
+                        appt.paymentMethod === 'cash' ? <>Confirm Booking</> : <>Verify Payment</>
                       ) : (
                         <>View Details</>
                       )}
@@ -156,12 +304,19 @@ export default function AppointmentsPage() {
           </table>
         </div>
       </Card>
+      )}
 
       {/* Detail/Verification Modal */}
       <Modal 
         isOpen={!!selectedAppt} 
         onClose={() => setSelectedAppt(null)}
-        title={selectedAppt?.status === 'pending' ? "Verify Payment" : "Appointment Details"}
+        title={
+          selectedAppt?.status === 'pending'
+            ? selectedAppt?.paymentMethod === 'cash'
+              ? "Confirm Cash Appointment"
+              : "Verify Payment"
+            : "Appointment Details"
+        }
         size="lg"
       >
         {selectedAppt && (
@@ -185,24 +340,34 @@ export default function AppointmentsPage() {
                 Payment Screenshot
               </h3>
               
-              <div className="aspect-video bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] flex flex-col items-center justify-center text-[var(--color-text-secondary)] overflow-hidden relative">
-                {selectedAppt.paymentScreenshotUrl ? (
-                  <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={selectedAppt.paymentScreenshotUrl} alt="Payment Receipt" className="w-full h-full object-contain" />
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="absolute bottom-4 right-4 bg-black/50 text-white hover:bg-black/70 border-none"
-                      onClick={() => window.open(selectedAppt.paymentScreenshotUrl, '_blank')}
-                    >
-                      <Eye className="w-4 h-4 mr-2" /> View Full Image
-                    </Button>
-                  </>
-                ) : (
-                  <p className="text-sm mb-2 text-center text-red-400">No payment screenshot uploaded</p>
-                )}
-              </div>
+              {selectedAppt.paymentMethod !== 'cash' && (
+                <div className="aspect-video bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] flex flex-col items-center justify-center text-[var(--color-text-secondary)] overflow-hidden relative">
+                  {selectedAppt.paymentScreenshotUrl ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={selectedAppt.paymentScreenshotUrl} alt="Payment Receipt" className="w-full h-full object-contain" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="absolute bottom-4 right-4 bg-black/50 text-white hover:bg-black/70 border-none"
+                        onClick={() => window.open(selectedAppt.paymentScreenshotUrl, '_blank')}
+                      >
+                        <Eye className="w-4 h-4 mr-2" /> View Full Image
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-sm mb-2 text-center text-red-400">No payment screenshot uploaded</p>
+                  )}
+                </div>
+              )}
+              {selectedAppt.paymentMethod === 'cash' && (
+                <div className="bg-[var(--color-surface)] p-6 rounded-xl text-center border border-dashed border-[var(--color-border)]">
+                  <p className="text-[var(--color-primary)] font-bold text-lg mb-1">💰 Cash — Pay at Clinic</p>
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    Patient has chosen to pay in person at the clinic.
+                  </p>
+                </div>
+              )}
             </div>
 
             {selectedAppt.status === 'pending' && (
@@ -213,7 +378,7 @@ export default function AppointmentsPage() {
                   onClick={() => handleUpdateStatus(selectedAppt.id, 'confirmed')}
                 >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Approve & Confirm
+                  {selectedAppt.paymentMethod === 'cash' ? 'Confirm Booking' : 'Approve & Confirm'}
                 </Button>
                 <Button 
                   variant="outline" 
