@@ -42,8 +42,9 @@ export function Footer() {
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <h3 className="text-xl font-bold text-[var(--color-primary)] mb-4">
-              Dr. Aamir Mustafa Dental Care
+            <h3 className="mb-4 leading-tight">
+              <span className="text-xl font-bold text-[var(--color-primary)] block">Dr. Aamir Mustafa</span>
+              <span className="text-white/80 text-lg font-semibold">Dental Care Clinic</span>
             </h3>
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
               Trusted Dentistry for a Lifetime of Smiles. Providing quality
