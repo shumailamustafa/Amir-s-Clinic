@@ -4,6 +4,7 @@ import {
   getDocs,
   addDoc,
   updateDoc,
+  deleteDoc,
   query,
   orderBy,
   type Unsubscribe,
@@ -92,5 +93,12 @@ export function subscribeToReviews(
   }, (error) => {
     logger.error({ error: formatError(error) }, 'Reviews subscription error');
     callback([], 'Failed to sync reviews');
+  });
+}
+
+export async function deleteReview(id: string): Promise<FirebaseResult<void>> {
+  return firebaseOperation('deleteReview', CONTEXT, async () => {
+    const ref = doc(getDb(), COLLECTION, id);
+    await deleteDoc(ref);
   });
 }

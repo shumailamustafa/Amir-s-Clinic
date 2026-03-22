@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, XCircle, Share2, Star } from 'lucide-react';
+import { CheckCircle2, XCircle, Share2, Star, Trash2 } from 'lucide-react';
 import { Button, Card, Badge } from '@dental/ui';
-import { subscribeToReviews, updateReviewStatus, addAdminReply } from '@dental/firebase';
+import { subscribeToReviews, updateReviewStatus, addAdminReply, deleteReview } from '@dental/firebase';
 import type { Review } from '@dental/types';
 
 export default function ReviewsPage() {
@@ -34,14 +34,12 @@ export default function ReviewsPage() {
     setIsUpdating(false);
   };
 
-  const handleReply = async (id: string) => {
-    if (!replyText[id]?.trim()) return;
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this review? This action cannot be undone.')) return;
     setIsUpdating(true);
-    const { error } = await addAdminReply(id, replyText[id]);
+    const { error } = await deleteReview(id);
     if (error) {
-      alert(`Failed to add reply: ${error}`);
-    } else {
-      setReplyText(prev => ({ ...prev, [id]: '' }));
+      alert(`Failed to delete review: ${error}`);
     }
     setIsUpdating(false);
   };
@@ -123,7 +121,7 @@ export default function ReviewsPage() {
                 )}
               </div>
 
-              {review.status === 'pending' && (
+              {review.status === 'pending' ? (
                 <div className="flex flex-row md:flex-col gap-2 shrink-0 border-t md:border-t-0 md:border-l border-[var(--color-border)] pt-4 md:pt-0 md:pl-6">
                   <Button 
                     className="flex-1 md:flex-none justify-start bg-[var(--color-status-open)] hover:bg-[var(--color-status-open)]/90 text-white border-0"
@@ -139,6 +137,17 @@ export default function ReviewsPage() {
                     isLoading={isUpdating}
                   >
                     <XCircle className="w-4 h-4 mr-2" /> Reject
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-row md:flex-col gap-2 shrink-0 border-t md:border-t-0 md:border-l border-[var(--color-border)] pt-4 md:pt-0 md:pl-6">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 md:flex-none justify-start text-red-500 hover:text-red-700 hover:bg-red-50/10 border-red-500/30"
+                    onClick={() => handleDelete(review.id)}
+                    isLoading={isUpdating}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" /> Delete
                   </Button>
                 </div>
               )}
