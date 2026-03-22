@@ -39,7 +39,7 @@ export function Navbar() {
       // Small delay to allow menu closing animation to start/finish
       // or at least not block the scroll compute
       setIsMobileMenuOpen(false);
-      
+
       setTimeout(() => {
         const element = document.getElementById(id);
         if (element) {
@@ -61,11 +61,10 @@ export function Navbar() {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
           ? 'bg-[var(--color-nav-bg)]/95 backdrop-blur-md shadow-lg border-b border-[var(--color-border)]'
           : 'bg-transparent'
-      }`}
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
@@ -76,12 +75,14 @@ export function Navbar() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <span className="text-2xl font-bold text-[var(--color-primary)]">
-              Dr. Aamir Mustafa
-            </span>
-            <span className="text-sm font-medium text-[var(--color-text-secondary)] hidden sm:block">
-              Dental Care
-            </span>
+            <div className="flex flex-col items-start leading-tight">
+              <span className="text-xl sm:text-2xl font-bold text-[var(--color-primary)]">
+                Dr. Aamir Mustafa
+              </span>
+              <span className="text-xs sm:text-sm font-medium text-[var(--color-text-secondary)]">
+                Dental Care Clinic
+              </span>
+            </div>
           </motion.button>
 
           {/* Desktop Navigation */}
@@ -93,11 +94,10 @@ export function Navbar() {
                 className="relative px-4 py-2 text-sm font-medium transition-colors cursor-pointer"
               >
                 <span
-                  className={`relative z-10 transition-colors duration-200 ${
-                    activeSection === id
+                  className={`relative z-10 transition-colors duration-200 ${activeSection === id
                       ? 'text-[var(--color-primary)]'
                       : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                  }`}
+                    }`}
                 >
                   {NAV_LABELS[id]}
                 </span>
@@ -159,11 +159,10 @@ export function Navbar() {
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: index * 0.05 }}
                   onClick={() => scrollToSection(id)}
-                  className={`block w-full text-left px-4 py-3 rounded-lg text-base font-medium transition-colors cursor-pointer ${
-                    activeSection === id
+                  className={`block w-full text-left px-4 py-3 rounded-lg text-base font-medium transition-colors cursor-pointer ${activeSection === id
                       ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10'
                       : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)]'
-                  }`}
+                    }`}
                 >
                   {NAV_LABELS[id]}
                 </motion.button>

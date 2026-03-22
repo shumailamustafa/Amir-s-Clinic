@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarDays, ChevronDown } from 'lucide-react';
 import { Button } from '@dental/ui';
 import { OpenClosedBadge } from '../ui/OpenClosedBadge';
@@ -9,7 +9,6 @@ import { FloatingTeeth } from '../ui/FloatingTeeth';
 
 import { useClinicStatus } from '../../hooks/useClinicStatus';
 import { isClinicOpen } from '@dental/utils';
-import { useEffect } from 'react';
 
 export function HomeSection() {
   const { config, loading } = useClinicStatus();
@@ -36,6 +35,21 @@ export function HomeSection() {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
+
+  const phrases = [
+    'Lifetime of Smiles',
+    'Healthy, Brighter Teeth',
+    'Confidence in Every Smile',
+    'Modern Dental Wellness'
+  ];
+  const [currentPhrase, setCurrentPhrase] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentPhrase((prev) => (prev + 1) % phrases.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [phrases.length]);
 
   return (
     <section
@@ -66,8 +80,8 @@ export function HomeSection() {
 
         {/* Animated Clinic Name */}
         <motion.h1
-          initial={{ opacity: 0, y: 30, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5, duration: 0.7, ease: 'easeOut' }}
           className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight"
         >
@@ -77,17 +91,23 @@ export function HomeSection() {
         </motion.h1>
 
         {/* Tagline */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8, duration: 0.6 }}
-          className="text-lg sm:text-xl md:text-2xl text-[var(--color-text-secondary)] mb-10 max-w-2xl mx-auto leading-relaxed"
-        >
-          Trusted Dentistry for a{' '}
-          <span className="text-[var(--color-primary)] font-semibold">
-            Lifetime of Smiles
-          </span>
-        </motion.p>
+        <div className="text-base sm:text-xl md:text-2xl text-[var(--color-text-secondary)] mb-10 max-w-4xl mx-auto leading-relaxed flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4">
+          <span className="whitespace-nowrap">Trusted Dentistry for a</span>
+          <div className="relative inline-flex min-w-[200px] sm:min-w-[300px] h-[1.2em] items-center">
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={currentPhrase}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.5, ease: 'easeInOut' }}
+                className="text-[var(--color-primary)] font-bold whitespace-nowrap absolute left-0"
+              >
+                {phrases[currentPhrase]}
+              </motion.span>
+            </AnimatePresence>
+          </div>
+        </div>
 
         {/* CTA Button */}
         <motion.div
