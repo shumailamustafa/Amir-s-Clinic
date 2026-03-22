@@ -4,7 +4,7 @@ export function LocalBusinessSchema() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Dentist',
-    name: 'Dr. Amir Dental Care',
+    name: 'Dr. Aamir Mustafa Dental Care',
     image: 'https://dramirdental.com/og-image.jpg',
     '@id': 'https://dramirdental.com',
     url: 'https://dramirdental.com',
@@ -50,7 +50,7 @@ export function LocalBusinessSchema() {
     departments: [
       {
         '@type': 'Dentist',
-        name: 'Dr. Amir',
+        name: 'Dr. Aamir Mustafa',
         description: 'BDS, FCPS — Head Dental Surgeon',
       },
     ],

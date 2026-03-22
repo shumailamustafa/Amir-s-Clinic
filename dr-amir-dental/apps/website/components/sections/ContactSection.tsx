@@ -30,7 +30,7 @@ export function ContactSection() {
     });
 
     if (error) {
-       alert(`Failed to send message: ${error}`);
+      alert(`Failed to send message: ${error}`);
     } else {
       setSubmitted(true);
       setName('');
@@ -43,9 +43,13 @@ export function ContactSection() {
   };
 
   const clinicPhone = config?.phone || '0300-1234567';
-  const clinicEmail = config?.email || 'info@dramirdental.com';
+  const clinicEmail = config?.email || 'info@draamirmustafa.com';
   const clinicAddress = config?.address || 'Main Boulevard, Gulberg III, Lahore';
-  const clinicWhatsapp = config?.whatsapp || '923001234567';
+  const clinicWhatsapp = config?.whatsapp || '03001828000';
+  const rawWhatsapp = clinicWhatsapp.replace(/[^0-9]/g, '');
+  const finalWhatsapp = rawWhatsapp.startsWith('0') && rawWhatsapp.length === 11
+    ? '92' + rawWhatsapp.slice(1)
+    : rawWhatsapp;
 
   const contactInfo = [
     {
@@ -66,7 +70,7 @@ export function ContactSection() {
       icon: MapPin,
       title: 'Address',
       value: clinicAddress,
-      href: 'https://maps.google.com',
+      href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clinicAddress)}`,
       description: 'Visit us at our clinic',
     },
     {
@@ -148,7 +152,7 @@ export function ContactSection() {
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              href={`https://wa.me/${clinicWhatsapp.replace(/[^0-9]/g, '')}`}
+              href={`https://wa.me/${finalWhatsapp}?text=${encodeURIComponent('Hello! I would like to inquire about dental services at Dr. Aamir Mustafa Dental Care.')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 bg-[var(--color-whatsapp-green)] text-white rounded-xl p-4 hover:opacity-90 transition-opacity"

@@ -23,7 +23,7 @@ export default function SettingsPage() {
       } else {
         // Fallback defaults if config doesn't exist
         setConfig({
-          name: 'Dr. Amir Dental Care',
+          name: 'Dr. Aamir Mustafa Dental Care',
           tagline: 'Your Smile, Our Priority',
           phone: '',
           whatsapp: '',
@@ -65,7 +65,7 @@ export default function SettingsPage() {
   };
 
   const copyRef = () => {
-    navigator.clipboard.writeText('https://dramirdental.com');
+    navigator.clipboard.writeText('https://draamirmustafa.com');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -146,7 +146,7 @@ export default function SettingsPage() {
            <div className="flex justify-between items-center mb-2">
              <span className="text-[var(--color-text-secondary)]">Current Settings:</span>
            </div>
-           <div><span className="text-[var(--color-primary)]">ADMIN_EMAIL</span>=admin@dramirdental.com</div>
+           <div><span className="text-[var(--color-primary)]">ADMIN_EMAIL</span>=admin@draamirmustafa.com</div>
            <div><span className="text-[var(--color-primary)]">ADMIN_PASSWORD</span>=********</div>
         </div>
       </Card>

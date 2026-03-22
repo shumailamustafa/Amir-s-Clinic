@@ -13,8 +13,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Admin Portal — Dr. Amir Dental Care',
-  description: 'Management dashboard for Dr. Amir Dental Care',
+  title: 'Admin Portal — Dr. Aamir Mustafa Dental Care',
+  description: 'Management dashboard for Dr. Aamir Mustafa Dental Care',
 };
 
 export default function RootLayout({

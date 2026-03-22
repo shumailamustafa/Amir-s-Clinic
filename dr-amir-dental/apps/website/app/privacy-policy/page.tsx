@@ -4,8 +4,8 @@ import { Navbar } from '../../components/layout/Navbar';
 import { Footer } from '../../components/layout/Footer';
 
 export const metadata = constructMetadata({
-  title: 'Privacy Policy | Dr. Amir Dental Care',
-  description: 'Learn about how Dr. Amir Dental Care collects, uses, and protects your personal information.',
+  title: 'Privacy Policy | Dr. Aamir Mustafa Dental Care',
+  description: 'Learn about how Dr. Aamir Mustafa Dental Care collects, uses, and protects your personal information.',
 });
 
 export default function PrivacyPolicyPage() {
@@ -20,7 +20,7 @@ export default function PrivacyPolicyPage() {
           <p>Last updated: March 15, 2024</p>
           
           <p>
-            At Dr. Amir Dental Care, we take your privacy seriously. This Privacy Policy explains how we collect,
+            At Dr. Aamir Mustafa Dental Care, we take your privacy seriously. This Privacy Policy explains how we collect,
             use, disclose, and safeguard your information when you visit our website or use our services.
           </p>
 
@@ -58,9 +58,9 @@ export default function PrivacyPolicyPage() {
             please contact us at:
           </p>
           <div className="bg-[var(--color-surface)] p-6 rounded-xl border border-[var(--color-border)] mt-4 text-[var(--color-text-primary)]">
-            <p className="font-bold">Dr. Amir Dental Care</p>
+            <p className="font-bold">Dr. Aamir Mustafa Dental Care</p>
             <p>123 Health Avenue, Phase 5, DHA, Lahore</p>
-            <p>Email: privacy@dramirdental.com</p>
+            <p>Email: privacy@draamirmustafa.com</p>
             <p>Phone: 0300-1234567</p>
           </div>
         </div>

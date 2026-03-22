@@ -14,6 +14,7 @@ export default function AboutPage() {
   const [name, setName] = useState('');
   const [title, setTitle] = useState('');
   const [bio, setBio] = useState('');
+  const [languages, setLanguages] = useState<string[]>([]);
   const [education, setEducation] = useState<Education[]>([]);
   const [experience, setExperience] = useState<Experience[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -36,6 +37,7 @@ export default function AboutPage() {
         setName(data.name || '');
         setTitle(data.title || '');
         setBio(data.bio || '');
+        setLanguages(data.languages || []);
         setEducation(data.education || []);
         setExperience(data.experience || []);
         setSkills(data.skills || []);
@@ -56,7 +58,7 @@ export default function AboutPage() {
   const handleSave = async () => {
     setSaving(true);
     const { error } = await updateDoctorProfile({
-      name, title, bio, education, experience, skills, achievements,
+      name, title, bio, education, experience, skills, achievements, languages,
       profileImageUrl
     } as DoctorProfile);
 
@@ -88,7 +90,7 @@ export default function AboutPage() {
     if (!e.target.files?.[0]) return;
     setIsUploading(true);
     const file = e.target.files[0];
-    const { data, error } = await uploadToCloudinary(file, 'dr-amir-gallery');
+    const { data, error } = await uploadToCloudinary(file, 'dr-aamir-gallery');
     
     if (error) {
       alert(`Upload failed: ${error}`);
@@ -113,7 +115,7 @@ export default function AboutPage() {
     if (!e.target.files?.[0]) return;
     setIsUploadingProfile(true);
     const file = e.target.files[0];
-    const { data, error } = await uploadToCloudinary(file, 'dr-amir-profile');
+    const { data, error } = await uploadToCloudinary(file, 'dr-aamir-profile');
     
     if (error) {
       alert(`Upload failed: ${error}`);
@@ -176,8 +178,17 @@ export default function AboutPage() {
               </div>
 
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input label="Name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Dr. Amir" />
+                <Input label="Name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Dr. Aamir Mustafa" />
                 <Input label="Title" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. BDS, FCPS — Dental Surgeon" />
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">Description (Bio)</label>
+                  <textarea 
+                    className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl py-2 px-4 text-[var(--color-text-primary)] focus:ring-2 focus:ring-[var(--color-primary)] outline-none min-h-[100px] resize-y"
+                    value={bio}
+                    onChange={e => setBio(e.target.value)}
+                    placeholder="Tell about your professional background..."
+                  />
+                </div>
               </div>
             </div>
           </Card>
@@ -231,6 +242,99 @@ export default function AboutPage() {
                     <Button variant="ghost" className="text-red-500 h-10 px-2" onClick={() => removeItem(setExperience, i)}><Trash2 className="w-4 h-4" /></Button>
                   </div>
                 ))}
+              </div>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Skills */}
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4 border-b border-[var(--color-border)] pb-2">
+                <h2 className="text-lg font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-[var(--color-primary)]" /> Skills
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => setSkills([...skills, { name: '', percentage: 100 }])}>
+                  <Plus className="w-4 h-4 mr-1" /> Add
+                </Button>
+              </div>
+              <div className="space-y-4">
+                {skills.map((skill, i) => (
+                  <div key={i} className="flex gap-2 p-3 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)]">
+                    <div className="flex-1 space-y-2">
+                      <Input placeholder="Skill Name" value={skill.name || ''} onChange={e => updateItem(setSkills, i, 'name', e.target.value)} />
+                      <div className="flex items-center gap-3 px-1">
+                        <input 
+                          type="range" 
+                          min="0" max="100" 
+                          value={skill.percentage} 
+                          onChange={e => updateItem(setSkills, i, 'percentage', parseInt(e.target.value))}
+                          className="flex-1 h-2 bg-[var(--color-border)] rounded-lg appearance-none cursor-pointer accent-[var(--color-primary)]"
+                        />
+                        <span className="text-xs font-bold text-[var(--color-primary)] w-8 text-right">{skill.percentage}%</span>
+                      </div>
+                    </div>
+                    <Button variant="ghost" className="text-red-500 h-10 px-2" onClick={() => removeItem(setSkills, i)}><Trash2 className="w-4 h-4" /></Button>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Achievements */}
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4 border-b border-[var(--color-border)] pb-2">
+                <h2 className="text-lg font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+                  <Award className="w-5 h-5 text-[var(--color-primary)]" /> Achievements
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => setAchievements([...achievements, { title: '', icon: '🏆' }])}>
+                  <Plus className="w-4 h-4 mr-1" /> Add
+                </Button>
+              </div>
+              <div className="space-y-4">
+                {achievements.map((ach, i) => (
+                  <div key={i} className="flex gap-2 p-3 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)]">
+                    <div className="flex-1 space-y-2">
+                      <Input placeholder="Achievement Title" value={ach.title || ''} onChange={e => updateItem(setAchievements, i, 'title', e.target.value)} />
+                      <Input placeholder="Emoji Icon" value={ach.icon || ''} onChange={e => updateItem(setAchievements, i, 'icon', e.target.value)} />
+                    </div>
+                    <Button variant="ghost" className="text-red-500 h-10 px-2" onClick={() => removeItem(setAchievements, i)}><Trash2 className="w-4 h-4" /></Button>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Languages */}
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4 border-b border-[var(--color-border)] pb-2">
+                <h2 className="text-lg font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+                  <Languages className="w-5 h-5 text-[var(--color-primary)]" /> Languages
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => setLanguages([...languages, ''])}>
+                  <Plus className="w-4 h-4 mr-1" /> Add
+                </Button>
+              </div>
+              <div className="space-y-4">
+                {languages.map((lang, i) => (
+                  <div key={i} className="flex gap-2 p-2 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)]">
+                    <input 
+                      className="flex-1 bg-transparent border-none focus:ring-0 p-2 text-[var(--color-text-primary)]" 
+                      placeholder="e.g. English" 
+                      value={lang} 
+                      onChange={e => {
+                        const copy = [...languages];
+                        copy[i] = e.target.value;
+                        setLanguages(copy);
+                      }} 
+                    />
+                    <Button variant="ghost" className="text-red-500 h-10 px-2" onClick={() => {
+                      setLanguages(languages.filter((_, idx) => idx !== i));
+                    }}><Trash2 className="w-4 h-4" /></Button>
+                  </div>
+                ))}
+                {languages.length === 0 && (
+                  <p className="text-xs text-[var(--color-text-tertiary)] italic text-center py-4">No languages added yet.</p>
+                )}
               </div>
             </Card>
           </div>
@@ -311,15 +415,42 @@ export default function AboutPage() {
                        onChange={e => setClinicConfig({...clinicConfig, email: e.target.value})}
                      />
                    </div>
-                   <div className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)]">
-                     <MapPin className="w-4 h-4 text-[var(--color-primary)]" />
-                     <textarea 
-                       className="bg-transparent border-none focus:ring-0 p-0 flex-1 placeholder:text-[var(--color-text-tertiary)] resize-none" 
-                       placeholder="Physcial Address"
-                       rows={2}
-                       value={clinicConfig.address}
-                       onChange={e => setClinicConfig({...clinicConfig, address: e.target.value})}
-                     />
+                   <div className="flex items-start gap-3 text-sm text-[var(--color-text-secondary)]">
+                     <MapPin className="w-4 h-4 text-[var(--color-primary)] mt-1" />
+                     <div className="flex-1 space-y-2">
+                       <textarea 
+                         className="w-full bg-transparent border-none focus:ring-0 p-0 placeholder:text-[var(--color-text-tertiary)] resize-none" 
+                         placeholder="Physical Address"
+                         rows={2}
+                         value={clinicConfig.address}
+                         onChange={e => setClinicConfig({...clinicConfig, address: e.target.value})}
+                       />
+                       <div className="h-px bg-[var(--color-border)]" />
+                       <div className="space-y-1">
+                         <label className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-wider">Google Maps Embed URL</label>
+                         <textarea 
+                           className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-2 text-xs focus:ring-1 focus:ring-[var(--color-primary)] outline-none resize-none" 
+                           placeholder="Paste map src URL here..."
+                           rows={3}
+                           value={clinicConfig.mapEmbedUrl || ''}
+                           onChange={e => setClinicConfig({...clinicConfig, mapEmbedUrl: e.target.value})}
+                         />
+                         <p className="text-[10px] text-[var(--color-text-tertiary)] italic">Paste the 'src' attribute from your Google Maps embed code.</p>
+                       </div>
+                       
+                       {clinicConfig.mapEmbedUrl && (
+                         <div className="mt-2 rounded-lg overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg)] aspect-video">
+                           <iframe 
+                             src={clinicConfig.mapEmbedUrl} 
+                             width="100%" 
+                             height="100%" 
+                             style={{ border: 0 }} 
+                             allowFullScreen 
+                             loading="lazy"
+                           />
+                         </div>
+                       )}
+                     </div>
                    </div>
                  </div>
 

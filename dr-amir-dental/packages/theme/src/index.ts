@@ -1,5 +1,5 @@
 // ============================================
-// Dr. Amir Dental Clinic — Theme Tokens
+// Dr. Aamir Mustafa Dental Clinic — Theme Tokens
 // All color hex values live HERE and ONLY here.
 // ============================================
 

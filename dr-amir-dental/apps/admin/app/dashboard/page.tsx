@@ -61,7 +61,7 @@ export default function DashboardOverview() {
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Dashboard Overview</h1>
           <p className="text-sm text-[var(--color-text-secondary)]">
-            Welcome back, Dr. Amir. Here's what's happening today.
+            Welcome back, Dr. Aamir Mustafa. Here's what's happening today.
           </p>
         </div>
         

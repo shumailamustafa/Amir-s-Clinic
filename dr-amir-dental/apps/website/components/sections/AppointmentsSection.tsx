@@ -143,7 +143,7 @@ export function AppointmentsSection() {
     let paymentScreenshotUrl = '';
     
     if (paymentScreenshot) {
-      const { data, error: uploadError } = await uploadToCloudinary(paymentScreenshot, 'dr-amir-payments');
+      const { data, error: uploadError } = await uploadToCloudinary(paymentScreenshot, 'dr-aamir-payments');
       if (uploadError) {
         alert(`Failed to upload screenshot: ${uploadError}`);
         setSubmitting(false);
@@ -180,7 +180,7 @@ export function AppointmentsSection() {
   };
 
   const handleCopyAccount = () => {
-    navigator.clipboard.writeText('JazzCash: 0300-1234567 (Dr. Amir)');
+    navigator.clipboard.writeText('JazzCash: 0300-1234567 (Dr. Aamir Mustafa)');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -492,7 +492,7 @@ export function AppointmentsSection() {
                         <h4 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">Payment Details</h4>
                         <div className="space-y-2 text-sm text-[var(--color-text-secondary)]">
                           <p><strong>JazzCash:</strong> 0300-1234567</p>
-                          <p><strong>Account Title:</strong> Dr. Amir</p>
+                          <p><strong>Account Title:</strong> Dr. Aamir Mustafa</p>
                           <p><strong>Consultation Fee:</strong> Rs. 1,500</p>
                         </div>
                         <button

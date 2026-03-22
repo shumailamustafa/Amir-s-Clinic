@@ -20,7 +20,7 @@ const blogData = [
   {
     id: '2',
     title: '5 Tips for Maintaining Perfect Oral Hygiene at Home',
-    excerpt: 'Discover the best practices for keeping your teeth and gums healthy between dental visits. Expert tips from Dr. Amir.',
+    excerpt: 'Discover the best practices for keeping your teeth and gums healthy between dental visits. Expert tips from Dr. Aamir Mustafa.',
     category: 'Oral Health',
     readingTime: '3 min read',
     date: '2024-02-15',

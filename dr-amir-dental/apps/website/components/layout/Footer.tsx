@@ -2,13 +2,8 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Phone, Mail, MapPin, Clock, Instagram, Facebook } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, Instagram, Facebook, Youtube, Linkedin, Music2 } from 'lucide-react';
 import { useClinicStatus } from '../../hooks/useClinicStatus';
-
-const socialLinks = [
-  { icon: Instagram, label: 'Instagram', href: '#' },
-  { icon: Facebook, label: 'Facebook', href: '#' },
-];
 
 const quickLinks = [
   { label: 'Home', href: '#home' },
@@ -28,6 +23,14 @@ export function Footer() {
   const email = config?.email || 'info@dramirdental.com';
   const address = config?.address || 'Main Boulevard, Gulberg III, Lahore, Pakistan';
 
+  const socialLinks = [
+    { icon: Facebook, label: 'Facebook', href: config?.socialLinks?.facebook },
+    { icon: Instagram, label: 'Instagram', href: config?.socialLinks?.instagram },
+    { icon: Music2, label: 'TikTok', href: config?.socialLinks?.tiktok },
+    { icon: Linkedin, label: 'LinkedIn', href: config?.socialLinks?.linkedin },
+    { icon: Youtube, label: 'YouTube', href: config?.socialLinks?.youtube },
+  ].filter(link => link.href && link.href !== '#' && link.href !== '');
+
   return (
     <footer className="bg-[var(--color-footer-bg)] text-white pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,7 +43,7 @@ export function Footer() {
             transition={{ duration: 0.5 }}
           >
             <h3 className="text-xl font-bold text-[var(--color-primary)] mb-4">
-              Dr. Amir Dental Care
+              Dr. Aamir Mustafa Dental Care
             </h3>
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
               Trusted Dentistry for a Lifetime of Smiles. Providing quality
@@ -113,21 +116,25 @@ export function Footer() {
               </div>
             </div>
 
-            <h4 className="text-sm font-semibold text-white mb-3">Follow Us</h4>
-            <div className="flex gap-3">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={social.label}
-                  className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[var(--color-primary)] transition-all duration-300 hover:scale-110"
-                >
-                  <social.icon className="w-5 h-5" />
-                </a>
-              ))}
-            </div>
+            {socialLinks.length > 0 && (
+              <>
+                <h4 className="text-sm font-semibold text-white mb-3">Follow Us</h4>
+                <div className="flex gap-3">
+                  {socialLinks.map((social) => (
+                    <a
+                      key={social.label}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={social.label}
+                      className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[var(--color-primary)] transition-all duration-300 hover:scale-110"
+                    >
+                      <social.icon className="w-5 h-5" />
+                    </a>
+                  ))}
+                </div>
+              </>
+            )}
           </motion.div>
         </div>
 
@@ -135,7 +142,7 @@ export function Footer() {
         <div className="border-t border-white/10 pt-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-gray-500 text-sm">
-              © {currentYear} Dr. Amir Dental Care. All rights reserved.
+              © {currentYear} Dr. Aamir Mustafa Dental Care. All rights reserved.
             </p>
             <div className="flex gap-6">
               <a

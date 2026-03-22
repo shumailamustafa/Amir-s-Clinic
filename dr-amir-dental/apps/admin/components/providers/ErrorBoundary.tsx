@@ -93,7 +93,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
             <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Something went wrong</h1>
             <p className="text-[var(--color-text-secondary)]">
-              We've encountered an unexpected error. Dr. Amir's team has been notified.
+              We've encountered an unexpected error. Dr. Aamir Mustafa's team has been notified.
             </p>
             <Button onClick={this.handleReset} className="w-full">
               Back to Safety

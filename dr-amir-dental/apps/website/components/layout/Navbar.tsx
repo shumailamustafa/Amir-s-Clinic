@@ -77,7 +77,7 @@ export function Navbar() {
             whileTap={{ scale: 0.98 }}
           >
             <span className="text-2xl font-bold text-[var(--color-primary)]">
-              Dr. Amir
+              Dr. Aamir Mustafa
             </span>
             <span className="text-sm font-medium text-[var(--color-text-secondary)] hidden sm:block">
               Dental Care

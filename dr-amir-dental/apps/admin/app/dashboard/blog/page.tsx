@@ -24,7 +24,7 @@ export default function BlogPage() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   // Fake author since we don't have user profiles right now
-  const [author, setAuthor] = useState('Dr. Amir'); 
+  const [author, setAuthor] = useState('Dr. Aamir Mustafa'); 
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -74,7 +74,7 @@ export default function BlogPage() {
     let imageUrl = previewUrl;
     
     if (imageFile) {
-      const { data, error: uploadError } = await uploadToCloudinary(imageFile, 'dr-amir-blog');
+      const { data, error: uploadError } = await uploadToCloudinary(imageFile, 'dr-aamir-blog');
       if (uploadError) {
         alert(`Failed to upload image: ${uploadError}`);
         setIsSaving(false);
@@ -157,7 +157,7 @@ export default function BlogPage() {
                       <LinkIcon className="w-3 h-3 flex-shrink-0" /> <span className="truncate">/blog/{post.slug}</span>
                     </div>
                   </td>
-                  <td className="p-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">Dr. Amir</td>
+                  <td className="p-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">Dr. Aamir Mustafa</td>
                   <td className="p-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
                     {new Date(post.createdAt).toLocaleDateString()}
                   </td>

@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@dramirdental.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@draamirmustafa.com';
     const adminPassword = process.env.ADMIN_PASSWORD || 'change-this-password';
 
     if (email !== adminEmail || password !== adminPassword) {

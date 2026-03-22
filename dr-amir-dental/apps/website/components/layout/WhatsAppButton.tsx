@@ -7,9 +7,13 @@ import { useClinicStatus } from '../../hooks/useClinicStatus';
 
 export function WhatsAppButton() {
   const { config } = useClinicStatus();
-  const whatsappNumber = config?.whatsapp?.replace(/[^0-9]/g, '') || '923001234567';
+  const whatsapp = config?.whatsapp || '03001828000';
+  const rawNumber = whatsapp.replace(/[^0-9]/g, '');
+  const whatsappNumber = rawNumber.startsWith('0') && rawNumber.length === 11
+    ? '92' + rawNumber.slice(1)
+    : rawNumber;
   const message = encodeURIComponent(
-    'Hello! I would like to book an appointment at Dr. Amir Dental Care.'
+    'Hello! I would like to book an appointment at Dr. Aamir Mustafa Dental Care.'
   );
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
 

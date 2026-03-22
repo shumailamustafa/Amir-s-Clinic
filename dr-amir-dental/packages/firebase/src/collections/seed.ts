@@ -12,11 +12,11 @@ export async function seedClinicConfig() {
   if (!snap.exists()) {
     console.log('Clinic config not found, seeding defaults...');
     const defaultConfig: ClinicConfig = {
-      name: 'Dr. Amir Dental Care',
+      name: 'Dr. Aamir Mustafa Dental Care',
       tagline: 'Trusted Dentistry for a Lifetime of Smiles',
       phone: '0300-1234567',
-      whatsapp: '923001234567',
-      email: 'info@dramirdental.com',
+      whatsapp: '0300-1828000',
+      email: 'info@draamirmustafa.com',
       address: 'Clinic Address, City',
       mapCoordinates: { lat: 24.8607, lng: 67.0011 },
       socialLinks: {

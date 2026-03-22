@@ -63,7 +63,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         
         <div className="flex items-center gap-3">
           <div className="hidden sm:block text-right">
-            <p className="text-sm font-medium text-[var(--color-text-primary)]">Dr. Amir</p>
+            <p className="text-sm font-medium text-[var(--color-text-primary)]">Dr. Aamir Mustafa</p>
             <p className="text-xs text-[var(--color-text-secondary)]">Administrator</p>
           </div>
           <div className="w-8 h-8 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-[var(--color-primary)]">

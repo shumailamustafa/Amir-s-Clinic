@@ -127,7 +127,7 @@ export default function ServicesPage() {
   const handleBAUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number, side: 'before' | 'after') => {
     if (e.target.files && e.target.files[0]) {
       setIsUploadingBA(index);
-      const { data, error } = await uploadToCloudinary(e.target.files[0], 'dr-amir-ba');
+      const { data, error } = await uploadToCloudinary(e.target.files[0], 'dr-aamir-ba');
       if (data) {
         const updated = [...beforeAfterImages];
         updated[index] = { ...updated[index], [side]: data };

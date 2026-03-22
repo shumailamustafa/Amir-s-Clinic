@@ -60,7 +60,7 @@ export default function LoginPage() {
             Admin Portal
           </h1>
           <p className="text-[var(--color-text-secondary)]">
-            Dr. Amir Dental Care Management
+            Dr. Aamir Mustafa Dental Care Management
           </p>
         </div>
 
@@ -82,7 +82,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@dramirdental.com"
+              placeholder="admin@draamirmustafa.com"
               icon={<Mail className="w-4 h-4" />}
               required
               disabled={isLoading}

@@ -1,5 +1,5 @@
 // ============================================
-// Dr. Amir Dental Clinic — Shared Type Definitions
+// Dr. Aamir Mustafa Dental Clinic — Shared Type Definitions
 // ============================================
 
 // ---------- Enums ----------
@@ -48,6 +48,7 @@ export interface OpenHours {
 export interface SocialLinks {
   instagram: string;
   facebook: string;
+  tiktok: string;
   linkedin: string;
   youtube: string;
 }
@@ -77,6 +78,7 @@ export interface ClinicConfig {
   galleryImages?: string[];
   appointmentSlots?: string[];
   maxDaysAhead?: number;
+  mapEmbedUrl?: string;
 }
 
 // ---------- Service ----------

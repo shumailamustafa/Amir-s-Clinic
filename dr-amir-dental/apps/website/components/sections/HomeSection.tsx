@@ -26,7 +26,7 @@ export function HomeSection() {
   }, [loading, config]);
 
   // Determine status from real-time config
-  const clinicStatus = config 
+  const clinicStatus = config
     ? isClinicOpen(config.openHours, config.holidayDates, config.holidayMode, config.emergencyMessage)
     : { isOpen: false, statusText: 'Status unavailable' };
 
@@ -71,7 +71,7 @@ export function HomeSection() {
           transition={{ delay: 0.5, duration: 0.7, ease: 'easeOut' }}
           className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight"
         >
-          <span className="text-[var(--color-primary)]">Dr. Amir</span>
+          <span className="text-[var(--color-primary)]">Dr. Aamir Mustafa</span>
           <br />
           <span className="text-[var(--color-text-primary)]">Dental Care</span>
         </motion.h1>

@@ -21,9 +21,9 @@ import { useClinicStatus } from '../../hooks/useClinicStatus';
 
 // Default mock data to use as fallback or loading state
 const defaultDoctorData = {
-  name: 'Dr. Amir',
+  name: 'Dr. Aamir Mustafa',
   title: 'BDS, FCPS — Dental Surgeon',
-  bio: 'With over 15 years of experience in modern dentistry, Dr. Amir is dedicated to providing the highest quality dental care using state-of-the-art technology and techniques.',
+  bio: 'With over 15 years of experience in modern dentistry, Dr. Aamir Mustafa is dedicated to providing the highest quality dental care using state-of-the-art technology and techniques.',
   profileImageUrl: '',
   education: [],
   experience: [],
@@ -84,11 +84,10 @@ export function AboutSection() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`relative px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer ${
-                  activeTab === tab
+                className={`relative px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer ${activeTab === tab
                     ? 'text-white'
                     : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                }`}
+                  }`}
               >
                 {activeTab === tab && (
                   <motion.div
@@ -395,11 +394,25 @@ function ClinicTab({ data, loading }: { data: any, loading: boolean }) {
             <p className="text-[var(--color-text-primary)] font-medium mb-4">
               {clinicData.address}
             </p>
-            {/* Google Maps Embed Placeholder */}
-            <div className="aspect-video bg-[var(--color-border)] rounded-lg flex items-center justify-center">
-              <span className="text-[var(--color-text-secondary)] text-sm">
-                Google Maps (requires API key)
-              </span>
+            {/* Google Maps Embed */}
+            <div className="aspect-video rounded-lg overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)]">
+              {clinicData.mapEmbedUrl ? (
+                <iframe
+                  src={clinicData.mapEmbedUrl}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-[var(--color-border)]/20">
+                  <span className="text-[var(--color-text-secondary)] text-sm italic">
+                    Location map not available
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>

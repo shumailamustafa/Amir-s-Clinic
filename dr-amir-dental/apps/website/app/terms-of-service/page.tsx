@@ -4,8 +4,8 @@ import { Navbar } from '../../components/layout/Navbar';
 import { Footer } from '../../components/layout/Footer';
 
 export const metadata = constructMetadata({
-  title: 'Terms of Service | Dr. Amir Dental Care',
-  description: 'Terms and conditions for using the Dr. Amir Dental Care website and services.',
+  title: 'Terms of Service | Dr. Aamir Mustafa Dental Care',
+  description: 'Terms and conditions for using the Dr. Aamir Mustafa Dental Care website and services.',
 });
 
 export default function TermsOfServicePage() {
@@ -21,7 +21,7 @@ export default function TermsOfServicePage() {
           
           <p>
             Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the 
-            dramirdental.com website (the "Service") operated by Dr. Amir Dental Care ("us", "we", or "our").
+            draamirmustafa.com website (the "Service") operated by Dr. Aamir Mustafa Dental Care ("us", "we", or "our").
           </p>
 
           <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mt-12 mb-4">1. Appointments and Cancellations</h2>
