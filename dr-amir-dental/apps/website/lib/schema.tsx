@@ -5,9 +5,9 @@ export function LocalBusinessSchema() {
     '@context': 'https://schema.org',
     '@type': 'Dentist',
     name: 'Dr. Aamir Mustafa Dental Care',
-    image: 'https://dramirdental.com/og-image.jpg',
-    '@id': 'https://dramirdental.com',
-    url: 'https://dramirdental.com',
+    image: 'https://aamirsdentalcare.web.app/og-image.jpg',
+    '@id': 'https://aamirsdentalcare.web.app',
+    url: 'https://aamirsdentalcare.web.app',
     telephone: '+923001234567',
     address: {
       '@type': 'PostalAddress',

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Clock, Tag, ChevronRight, Search, X } from 'lucide-react';
+import { BookOpen, Clock, Tag, ChevronRight, Search, X, ArrowLeft } from 'lucide-react';
 import { FloatingTeeth } from '../ui/FloatingTeeth';
 
 // Placeholder blog posts — will come from Firestore
@@ -250,13 +250,22 @@ export function BlogSection() {
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             >
-              {/* Close button */}
-              <button
-                onClick={() => setSelectedPost(null)}
-                className="absolute top-4 right-4 p-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors cursor-pointer z-10"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              {/* Back / Close Header */}
+              <div className="sticky top-0 bg-[var(--color-bg)]/80 backdrop-blur-md border-b border-[var(--color-border)] px-6 py-4 flex items-center justify-between z-20">
+                <button
+                  onClick={() => setSelectedPost(null)}
+                  className="flex items-center gap-2 text-[var(--color-primary)] font-bold hover:gap-3 transition-all cursor-pointer"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  <span>Back to Website</span>
+                </button>
+                <button
+                  onClick={() => setSelectedPost(null)}
+                  className="p-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
               <div className="p-8">
                 {/* Category + Reading Time */}

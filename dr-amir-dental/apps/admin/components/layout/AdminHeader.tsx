@@ -32,7 +32,18 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      // Clear cookie
+      document.cookie = 'admin-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      // Clear localStorage
+      localStorage.removeItem('admin-token');
+      
+      // Also try to hit the API if it's running in dev, but ignore failure if it's static
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } catch (e) {
+        // Ignore API failure on static hosting
+      }
+
       router.push('/login');
       router.refresh();
     } catch (error) {

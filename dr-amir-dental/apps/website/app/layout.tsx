@@ -11,6 +11,7 @@ import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
 import { EmergencyBanner } from '../components/ui/EmergencyBanner';
 import { WhatsAppButton } from '../components/layout/WhatsAppButton';
+import { ScrollToTop } from '../components/ui/ScrollToTop';
 import { Toaster } from 'sonner';
 import './globals.css';
 
@@ -55,6 +56,7 @@ export default function RootLayout({
             <main className={inter.className}>{children}</main>
             <Footer />
             <WhatsAppButton />
+            <ScrollToTop />
           </ThemeProvider>
           <DevErrorPanel />
           <Toaster position="bottom-right" />

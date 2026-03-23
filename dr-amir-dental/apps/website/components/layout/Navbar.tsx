@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Menu, Phone } from 'lucide-react';
+import { X, Menu, Phone, ArrowLeft } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useScrollSpy, SECTIONS, type SectionId } from '../../hooks/useScrollSpy';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { useClinicStatus } from '../../hooks/useClinicStatus';
@@ -20,6 +21,9 @@ const NAV_LABELS: Record<SectionId, string> = {
 export function Navbar() {
   const activeSection = useScrollSpy();
   const { config } = useClinicStatus();
+  const pathname = usePathname();
+  const router = useRouter();
+  const isHomePage = pathname === '/';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -62,8 +66,8 @@ export function Navbar() {
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-          ? 'bg-[var(--color-nav-bg)]/95 backdrop-blur-md shadow-lg border-b border-[var(--color-border)]'
-          : 'bg-transparent'
+        ? 'bg-[var(--color-nav-bg)]/95 backdrop-blur-md shadow-lg border-b border-[var(--color-border)]'
+        : 'bg-transparent'
         }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -87,29 +91,39 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1">
-            {SECTIONS.map((id) => (
-              <button
-                key={id}
-                onClick={() => scrollToSection(id)}
-                className="relative px-4 py-2 text-sm font-medium transition-colors cursor-pointer"
-              >
-                <span
-                  className={`relative z-10 transition-colors duration-200 ${activeSection === id
+            {isHomePage ? (
+              SECTIONS.map((id) => (
+                <button
+                  key={id}
+                  onClick={() => scrollToSection(id)}
+                  className="relative px-4 py-2 text-sm font-medium transition-colors cursor-pointer"
+                >
+                  <span
+                    className={`relative z-10 transition-colors duration-200 ${activeSection === id
                       ? 'text-[var(--color-primary)]'
                       : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                    }`}
-                >
-                  {NAV_LABELS[id]}
-                </span>
-                {activeSection === id && (
-                  <motion.div
-                    layoutId="navbar-indicator"
-                    className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--color-primary)] rounded-full"
-                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                  />
-                )}
+                      }`}
+                  >
+                    {NAV_LABELS[id]}
+                  </span>
+                  {activeSection === id && (
+                    <motion.div
+                      layoutId="navbar-indicator"
+                      className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--color-primary)] rounded-full"
+                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                    />
+                  )}
+                </button>
+              ))
+            ) : (
+              <button
+                onClick={() => router.push('/')}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-full transition-colors cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Home</span>
               </button>
-            ))}
+            )}
           </div>
 
           {/* Right Side: Phone + Theme Toggle + Hamburger */}
@@ -152,21 +166,36 @@ export function Navbar() {
             className="lg:hidden bg-[var(--color-nav-bg)] border-t border-[var(--color-border)] overflow-hidden"
           >
             <div className="px-4 py-4 space-y-1">
-              {SECTIONS.map((id, index) => (
-                <motion.button
-                  key={id}
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                  onClick={() => scrollToSection(id)}
-                  className={`block w-full text-left px-4 py-3 rounded-lg text-base font-medium transition-colors cursor-pointer ${activeSection === id
+              {isHomePage ? (
+                SECTIONS.map((id, index) => (
+                  <motion.button
+                    key={id}
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => scrollToSection(id)}
+                    className={`block w-full text-left px-4 py-3 rounded-lg text-base font-medium transition-colors cursor-pointer ${activeSection === id
                       ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10'
                       : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)]'
-                    }`}
+                      }`}
+                  >
+                    {NAV_LABELS[id]}
+                  </motion.button>
+                ))
+              ) : (
+                <motion.button
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    router.push('/');
+                  }}
+                  className="flex items-center gap-3 w-full text-left px-4 py-4 rounded-lg text-lg font-bold text-[var(--color-primary)] bg-[var(--color-primary)]/10 cursor-pointer"
                 >
-                  {NAV_LABELS[id]}
+                  <ArrowLeft className="w-5 h-5" />
+                  <span>Back to Home</span>
                 </motion.button>
-              ))}
+              )}
 
               {/* Mobile phone link */}
               <a
@@ -176,6 +205,13 @@ export function Navbar() {
                 <Phone className="w-5 h-5" />
                 <span>{phone}</span>
               </a>
+
+              {/* Developer Attribution */}
+              <div className="pt-6 pb-2 px-4 border-t border-[var(--color-border)] mt-4">
+                <p className="text-xs text-[var(--color-text-secondary)] opacity-80 text-center">
+                  build with <span className="text-red-500">❤️</span> by Shumaila Mustafa
+                </p>
+              </div>
             </div>
           </motion.div>
         )}

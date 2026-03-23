@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "aamirs-dental-clinic"
+  },
+  "targets": {
+    "aamirs-dental-clinic": {
+      "hosting": {
+        "website": [
+          "aamirsdentalcare"
+        ],
+        "admin": [
+          "aamirsdentalcareadmin"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

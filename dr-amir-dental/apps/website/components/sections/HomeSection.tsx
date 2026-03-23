@@ -83,17 +83,38 @@ export function HomeSection() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5, duration: 0.7, ease: 'easeOut' }}
-          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight"
+          className="text-[clamp(2.5rem,10vw,4.5rem)] sm:text-7xl md:text-8xl lg:text-9xl font-bold mb-6 leading-tight"
         >
-          <span className="text-[var(--color-primary)]">Dr. Aamir Mustafa</span>
+          <span className="text-[var(--color-primary)] whitespace-nowrap">Dr. Aamir Mustafa</span>
           <br />
           <span className="text-[var(--color-text-primary)]">Dental Care</span>
         </motion.h1>
 
-        {/* Tagline */}
-        <div className="text-base sm:text-xl md:text-2xl text-[var(--color-text-secondary)] mb-10 max-w-4xl mx-auto leading-relaxed flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4">
+        {/* Tagline - Separated for Desktop and Mobile for perfect alignment */}
+
+        {/* Mobile View: Vertical Stack & Centered */}
+        <div className="flex flex-col items-center justify-center gap-y-2 text-base text-[var(--color-text-secondary)] mb-10 px-4 sm:hidden">
+          <span>Trusted Dentistry for a</span>
+          <div className="relative h-[1.2em] w-full flex items-center justify-center">
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={currentPhrase}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.5, ease: 'easeInOut' }}
+                className="text-[var(--color-primary)] font-bold absolute inset-0 flex items-center justify-center text-center px-2"
+              >
+                {phrases[currentPhrase]}
+              </motion.span>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Desktop View: Horizontal Flow */}
+        <div className="hidden sm:flex flex-row items-center justify-center gap-x-2 text-xl md:text-2xl text-[var(--color-text-secondary)] mb-10 px-4">
           <span className="whitespace-nowrap">Trusted Dentistry for a</span>
-          <div className="relative inline-flex min-w-[200px] sm:min-w-[300px] h-[1.2em] items-center">
+          <div className="relative inline-flex min-w-[320px] md:min-w-[400px] h-[1.2em] items-center">
             <AnimatePresence mode="wait">
               <motion.span
                 key={currentPhrase}

@@ -1,0 +1,26 @@
+{
+  "hosting": [
+    {
+      "target": "website",
+      "public": "apps/website/out",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "cleanUrls": true,
+      "trailingSlash": true
+    },
+    {
+      "target": "admin",
+      "public": "apps/admin/out",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "cleanUrls": true,
+      "trailingSlash": true
+    }
+  ]
+}

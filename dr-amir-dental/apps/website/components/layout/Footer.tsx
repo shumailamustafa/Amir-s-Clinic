@@ -141,20 +141,26 @@ export function Footer() {
 
         {/* Divider */}
         <div className="border-t border-white/10 pt-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-gray-500 text-sm">
-              © {currentYear} Dr. Aamir Mustafa Dental Care. All rights reserved.
-            </p>
-            <div className="flex gap-6">
+          <div className="flex flex-col items-center justify-center gap-6 text-center">
+            <div className="space-y-2">
+              <p className="text-gray-500 text-[10px] xs:text-xs sm:text-sm uppercase tracking-wider">
+                © {currentYear} Dr. Aamir Mustafa Dental Care. All rights reserved.
+              </p>
+              <p className="text-gray-500/80 text-[10px] xs:text-xs sm:text-sm italic">
+                build with <span className="text-red-500">❤️</span> by Shumaila Mustafa
+              </p>
+            </div>
+            
+            <div className="flex gap-8 border-t border-white/5 pt-4 w-full justify-center">
               <a
                 href="/privacy-policy"
-                className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
+                className="text-gray-500 hover:text-[var(--color-primary)] text-xs transition-colors"
               >
                 Privacy Policy
               </a>
               <a
                 href="/terms-of-service"
-                className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
+                className="text-gray-500 hover:text-[var(--color-primary)] text-xs transition-colors"
               >
                 Terms of Service
               </a>

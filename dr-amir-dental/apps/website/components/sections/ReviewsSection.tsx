@@ -52,8 +52,20 @@ export function ReviewsSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [scrollIndex, setScrollIndex] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(3);
   
   const { reviews, loading } = useReviews(true);
+
+  // Update visibleCount on resize
+  useEffect(() => {
+    const updateCount = () => {
+      setVisibleCount(window.innerWidth < 768 ? 1 : 3);
+    };
+    updateCount();
+    window.addEventListener('resize', updateCount);
+    return () => window.removeEventListener('resize', updateCount);
+  }, []);
 
   // Recalculate stats based on real reviews
   const statsData = React.useMemo(() => {
@@ -77,8 +89,18 @@ export function ReviewsSection() {
     avatarLetter: r.patientName.charAt(0).toUpperCase()
   }));
 
-const visibleCount = 3;
   const maxIndex = Math.max(0, displayReviews.length - visibleCount);
+
+  // Auto-slide logic
+  useEffect(() => {
+    if (loading || isPaused || displayReviews.length <= visibleCount) return;
+
+    const interval = setInterval(() => {
+      setScrollIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [loading, isPaused, displayReviews.length, maxIndex, visibleCount]);
 
   const handleSubmitReview = async () => {
     if (!reviewerName || !reviewRating || !reviewText) return;
@@ -189,12 +211,16 @@ const visibleCount = 3;
                 <ChevronLeft className="w-5 h-5 text-[var(--color-text-primary)]" />
               </button>
 
-              <div className="flex-1 overflow-hidden">
+              <div 
+                className="flex-1 overflow-hidden"
+                onMouseEnter={() => setIsPaused(true)}
+                onMouseLeave={() => setIsPaused(false)}
+              >
                 <motion.div
                   className="flex gap-6"
-                  animate={{ x: `-${scrollIndex * (100 / visibleCount + 2)}%` }}
-                  transition={{ type: 'spring', stiffness: 200, damping: 30 }}
-                >
+                   animate={{ x: `calc(-${scrollIndex} * (100% / ${visibleCount} + 24px / ${visibleCount}))` }}
+                   transition={{ type: 'spring', stiffness: 150, damping: 25 }}
+                 >
                   {displayReviews.map((review, index) => (
                     <motion.div
                       key={review.id}

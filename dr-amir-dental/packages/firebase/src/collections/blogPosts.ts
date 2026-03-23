@@ -8,7 +8,6 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   onSnapshot,
   type Unsubscribe,
 } from 'firebase/firestore';

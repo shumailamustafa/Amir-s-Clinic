@@ -44,6 +44,20 @@ export default function ReviewsPage() {
     setIsUpdating(false);
   };
 
+  const handleReply = async (id: string) => {
+    const text = replyText[id];
+    if (!text?.trim()) return;
+
+    setIsUpdating(true);
+    const { error } = await addAdminReply(id, text);
+    if (error) {
+      alert(`Failed to post reply: ${error}`);
+    } else {
+      setReplyText({ ...replyText, [id]: '' });
+    }
+    setIsUpdating(false);
+  };
+
   return (
     <div className="space-y-6 max-w-5xl">
       <div>

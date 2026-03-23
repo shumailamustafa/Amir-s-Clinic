@@ -17,6 +17,7 @@ import {
   Users,
   Zap,
   Heart,
+  ArrowLeft,
 } from 'lucide-react';
 import { FloatingTeeth } from '../ui/FloatingTeeth';
 import { Button } from '@dental/ui';
@@ -251,13 +252,22 @@ export function ServicesSection() {
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             >
-              {/* Close button */}
-              <button
-                onClick={() => setSelectedService(null)}
-                className="absolute top-4 right-4 p-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors cursor-pointer z-10"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              {/* Back / Close Header */}
+              <div className="sticky top-0 bg-[var(--color-bg)]/80 backdrop-blur-md border-b border-[var(--color-border)] px-6 py-4 flex items-center justify-between z-20">
+                <button
+                  onClick={() => setSelectedService(null)}
+                  className="flex items-center gap-2 text-[var(--color-primary)] font-bold hover:gap-3 transition-all cursor-pointer"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  <span>Back to Website</span>
+                </button>
+                <button
+                  onClick={() => setSelectedService(null)}
+                  className="p-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
               <div className="p-8">
                 {/* Service icon + title */}

@@ -7,7 +7,10 @@ const nextConfig = {
     '@dental/utils',
     '@dental/types',
   ],
+  output: 'export',
+  trailingSlash: true,
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
